@@ -1,0 +1,62 @@
+[
+  {
+    "id": "IT-001",
+    "name": "MacBook Pro 14\" M3",
+    "category": "Laptop",
+    "brand": "Apple",
+    "model": "MPHF3TH/A",
+    "serial": "C02ZW1ABMD6T",
+    "quantity": 5,
+    "minQuantity": 2,
+    "location": "ชั้น A-1",
+    "status": "active",
+    "description": "MacBook Pro 14 นิ้ว ชิป M3, RAM 8GB, SSD 512GB",
+    "createdAt": "2024-01-15T08:00:00.000Z",
+    "updatedAt": "2024-01-15T08:00:00.000Z"
+  },
+  {
+    "id": "IT-002",
+    "name": "Dell Monitor 27\" 4K",
+    "category": "Monitor",
+    "brand": "Dell",
+    "model": "U2723D",
+    "serial": "CN-0ABCDE-12345",
+    "quantity": 12,
+    "minQuantity": 3,
+    "location": "ชั้น B-2",
+    "status": "active",
+    "description": "จอมอนิเตอร์ 27 นิ้ว 4K IPS, USB-C Hub",
+    "createdAt": "2024-01-16T09:00:00.000Z",
+    "updatedAt": "2024-01-16T09:00:00.000Z"
+  },
+  {
+    "id": "IT-003",
+    "name": "Logitech MX Master 3S",
+    "category": "Peripheral",
+    "brand": "Logitech",
+    "model": "MX-M3S",
+    "serial": "2243-ABCD-5678",
+    "quantity": 8,
+    "minQuantity": 5,
+    "location": "ชั้น C-1",
+    "status": "active",
+    "description": "เมาส์ Wireless Bluetooth, 8000 DPI",
+    "createdAt": "2024-01-17T10:00:00.000Z",
+    "updatedAt": "2024-01-17T10:00:00.000Z"
+  },
+  {
+    "name": "ICHITAN",
+    "category": "Laptop",
+    "brand": "**%**(!#))!!)",
+    "model": "8858891300110",
+    "serial": "8858891300110",
+    "quantity": 6,
+    "minQuantity": 2,
+    "location": "A-1,A",
+    "description": "8858891300110",
+    "id": "IT-004",
+    "status": "active",
+    "createdAt": "2026-03-05T07:22:17.266Z",
+    "updatedAt": "2026-03-05T07:24:26.547Z"
+  }
+]
