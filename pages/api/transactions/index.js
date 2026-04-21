@@ -13,7 +13,7 @@ export default function handler(req, res) {
   }
 
   if (method === 'POST') {
-    const { itemId, type, qty, note, by } = req.body
+    const { itemId, type, qty, note, by, location } = req.body
     if (!itemId || !type || !qty) {
       return res.status(400).json({ message: 'itemId, type, qty required' })
     }
@@ -56,6 +56,7 @@ export default function handler(req, res) {
       qtyAfter: newQty,
       note: note || '',
       by: by || 'System',
+      location: location || '',
       createdAt: new Date().toISOString(),
     }
     txns.push(txn)

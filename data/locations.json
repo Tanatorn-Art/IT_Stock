@@ -1,0 +1,134 @@
+[
+  {
+    "id": "LOC-001",
+    "name": "ชั้น A-1",
+    "description": "ชั้น A ด้านที่ 1",
+    "status": "active"
+  },
+  {
+    "id": "LOC-002",
+    "name": "ชั้น A-2",
+    "description": "ชั้น A ด้านที่ 2",
+    "status": "active"
+  },
+  {
+    "id": "LOC-003",
+    "name": "ชั้น A-3",
+    "description": "ชั้น A ด้านที่ 3",
+    "status": "empty"
+  },
+  {
+    "id": "LOC-004",
+    "name": "ชั้น A-4",
+    "description": "ชั้น A ด้านที่ 4",
+    "status": "empty"
+  },
+  {
+    "id": "LOC-005",
+    "name": "ชั้น B-1",
+    "description": "ชั้น B ด้านที่ 1",
+    "status": "active"
+  },
+  {
+    "id": "LOC-006",
+    "name": "ชั้น B-2",
+    "description": "ชั้น B ด้านที่ 2",
+    "status": "active"
+  },
+  {
+    "id": "LOC-007",
+    "name": "ชั้น B-3",
+    "description": "ชั้น B ด้านที่ 3",
+    "status": "empty"
+  },
+  {
+    "id": "LOC-008",
+    "name": "ชั้น B-4",
+    "description": "ชั้น B ด้านที่ 4",
+    "status": "empty"
+  },
+  {
+    "id": "LOC-009",
+    "name": "ชั้น C-1",
+    "description": "ชั้น C ด้านที่ 1",
+    "status": "active"
+  },
+  {
+    "id": "LOC-010",
+    "name": "ชั้น C-2",
+    "description": "ชั้น C ด้านที่ 2",
+    "status": "active"
+  },
+  {
+    "id": "LOC-011",
+    "name": "ชั้น C-3",
+    "description": "ชั้น C ด้านที่ 3",
+    "status": "active"
+  },
+  {
+    "id": "LOC-012",
+    "name": "ชั้น C-4",
+    "description": "ชั้น C ด้านที่ 4",
+    "status": "active"
+  },
+  {
+    "id": "LOC-013",
+    "name": "ชั้น D-1",
+    "description": "ชั้น D ด้านที่ 1",
+    "status": "active"
+  },
+  {
+    "id": "LOC-014",
+    "name": "ชั้น D-2",
+    "description": "ชั้น D ด้านที่ 2",
+    "status": "active"
+  },
+  {
+    "id": "LOC-015",
+    "name": "ชั้น D-3",
+    "description": "ชั้น D ด้านที่ 3",
+    "status": "active"
+  },
+  {
+    "id": "LOC-016",
+    "name": "ชั้น D-4",
+    "description": "ชั้น D ด้านที่ 4",
+    "status": "active"
+  },
+  {
+    "id": "LOC-017",
+    "name": "ชั้น E-1",
+    "description": "ชั้น E ด้านที่ 1",
+    "status": "active"
+  },
+  {
+    "id": "LOC-018",
+    "name": "ชั้น E-2",
+    "description": "ชั้น E ด้านที่ 2",
+    "status": "active"
+  },
+  {
+    "id": "LOC-019",
+    "name": "ชั้น E-3",
+    "description": "ชั้น E ด้านที่ 3",
+    "status": "active"
+  },
+  {
+    "id": "LOC-020",
+    "name": "ชั้น E-4",
+    "description": "ชั้น E ด้านที่ 4",
+    "status": "active"
+  },
+  {
+    "id": "LOC-021",
+    "name": "ชั้น E-5",
+    "description": "ชั้น E ด้านที่ 5",
+    "status": "active"
+  },
+  {
+    "id": "LOC-022",
+    "name": "ชั้น E-6",
+    "description": "ชั้น E ด้านที่ 6",
+    "status": "active"
+  }
+]

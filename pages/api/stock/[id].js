@@ -12,6 +12,10 @@ export default function handler(req, res) {
 
   if (method === 'PUT') {
     if (idx === -1) return res.status(404).json({ message: 'Not found' })
+    const { name, brand, quantity, location } = req.body
+    if (!name || !brand || !quantity || !location) {
+      return res.status(400).json({ message: 'name, brand, quantity, location required' })
+    }
     const body = { ...req.body }
     delete body.price
     const updated = {

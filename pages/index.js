@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { Package, MapPin, Scan, Search, Plus, AlertTriangle, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, Edit, Trash, X, CheckCircle, XCircle, Barcode } from 'lucide-react'
 
 const BarcodeModal = dynamic(() => import('../components/BarcodeModal'), { ssr: false })
 const StockForm    = dynamic(() => import('../components/StockForm'),    { ssr: false })
+const ViewModal    = dynamic(() => import('../components/ViewModal'),    { ssr: false })
 
 const CATS = ['all','Laptop','Desktop','Monitor','Peripheral','Network','Server','Storage','Phone','Tablet','Other']
-const ICON = {Laptop:'💻',Desktop:'🖥️',Monitor:'🖥',Peripheral:'🖱️',Network:'🌐',Server:'🗄️',Storage:'💾',Phone:'📱',Tablet:'📲',Other:'📦',all:'🗂️'}
+const ICON = {Laptop:Laptop,Desktop:Monitor,Monitor:Monitor,Peripheral:Mouse,Network:Network,Server:Server,Storage:HardDrive,Phone:Smartphone,Tablet:Tablet,Other:Box,all:Box}
 
 export default function Home() {
   const [items,    setItems]    = useState([])
@@ -17,9 +19,11 @@ export default function Home() {
   const [barItem,  setBarItem]  = useState(null)
   const [formItem, setFormItem] = useState(undefined)
   const [delItem,  setDelItem]  = useState(null)
+  const [viewItem, setViewItem]  = useState(null)
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy,   setSortBy]   = useState('id')
   const [toast,    setToast]    = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const showToast = (msg, type='success') => {
     setToast({msg,type})
@@ -72,76 +76,45 @@ export default function Home() {
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖥️</text></svg>" />
       </Head>
 
-      <div style={layout}>
-        {/* Sidebar */}
-        <aside style={sidebar}>
-          <div style={logoArea}>
-            <div style={logoBox}>IT</div>
-            <div>
-              <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>Stock Manager</div>
-              <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--mono)'}}>IT Dept.</div>
+      <div style={{...layout, backgroundImage: 'url(/images/bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'}}>
+        {/* Navbar */}
+        <nav style={navbar}>
+          <div style={{maxWidth:1400,margin:'0 auto',width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            {/* <div style={navbarLeft}>
+              <div style={logoBox}>IT</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Stock Manager</div>
+            </div> */}
+            <div style={navbarNav}>
+              <Link href="/" className="nav-link" style={navItem(true)}><Package size={16} /> Stock รายการ</Link>
+              <Link href="/location" className="nav-link" style={navItem(false)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
+              <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
+            </div>
+            <div style={navbarRight}>
+              <CategoryDropdown current={category} onSelect={setCategory} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
+              <Stat label="รายการ" val={stats.total} unit="รายการ" />
+              <Stat label="รวม" val={stats.totalQty} unit="ชิ้น" />
+              <Stat label="ใกล้หมด" val={stats.low} unit="รายการ" color={stats.low>0?'var(--warning)':'var(--success)'} />
             </div>
           </div>
-
-          {/* Nav */}
-          <div style={navSection}>
-            <div style={navLabel}>เมนูหลัก</div>
-            <Link href="/" style={navItem(true)}>📦 Stock รายการ</Link>
-            <Link href="/scan" style={navItem(false)}>📷 Scan รับ/นำออก</Link>
-          </div>
-
-          {/* Categories */}
-          <div style={navSection}>
-            <div style={navLabel}>หมวดหมู่</div>
-            {CATS.map(cat => (
-              <button key={cat} onClick={()=>setCategory(cat)} style={catBtn(category===cat)}>
-                <span>{ICON[cat]||'📦'}</span>
-                <span style={{flex:1,textAlign:'left'}}>{cat==='all'?'ทั้งหมด':cat}</span>
-                {cat!=='all' && <span style={countPill}>{items.filter(i=>i.category===cat).length}</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* Stats */}
-          <div style={statsBox}>
-            <Stat label="รายการทั้งหมด" val={stats.total} unit="รายการ" />
-            <Stat label="จำนวนรวม"       val={stats.totalQty} unit="ชิ้น" />
-            <Stat label="Stock ใกล้หมด"  val={stats.low} unit="รายการ" color={stats.low>0?'var(--warning)':'var(--success)'} />
-          </div>
-        </aside>
+        </nav>
 
         {/* Main */}
         <main style={mainArea}>
           {/* Toolbar */}
           <div style={toolbar}>
             <div style={searchWrap}>
-              <span style={{color:'var(--text3)',fontSize:14}}>🔍</span>
+              <Search size={16} style={{color:'var(--text3)'}} />
               <input style={searchIn} placeholder="ค้นหา ID, ชื่อ, ยี่ห้อ, Serial..." value={search} onChange={e=>setSearch(e.target.value)} />
-              {search && <button onClick={()=>setSearch('')} style={clearX}>✕</button>}
+              {search && <button onClick={()=>setSearch('')} style={clearX}><X size={12} /></button>}
             </div>
 
-            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={sortSel}>
-              <option value="id">ID</option>
-              <option value="name">ชื่อ</option>
-              <option value="qty">จำนวน ↓</option>
-              <option value="qty_asc">จำนวน ↑</option>
-            </select>
-
-            <div style={viewToggle}>
-              {['grid','table'].map(v=>(
-                <button key={v} onClick={()=>setViewMode(v)} style={viewBtn(viewMode===v)}>
-                  {v==='grid'?'⊞':'☰'}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={()=>setFormItem(null)} style={addBtn}>+ เพิ่มอุปกรณ์</button>
+            <button onClick={()=>setFormItem(null)} style={addBtn}><Plus size={14} /> เพิ่มอุปกรณ์</button>
           </div>
 
           {/* Alert */}
           {stats.low>0 && (
             <div style={alertBar}>
-              ⚠️ มี <b>{stats.low} รายการ</b> ที่ Stock ใกล้หมด
+              <AlertTriangle size={16} style={{marginRight: 8}} /> มี <b>{stats.low} รายการ</b> ที่ Stock ใกล้หมด
             </div>
           )}
 
@@ -150,9 +123,9 @@ export default function Home() {
             <div style={centerBox}><div style={spinner}/><span style={{color:'var(--text3)',fontFamily:'var(--mono)',fontSize:13}}>Loading...</span></div>
           ) : sorted.length===0 ? (
             <div style={centerBox}>
-              <div style={{fontSize:48,marginBottom:12}}>📭</div>
+              <Package size={48} style={{marginBottom:12,color:'var(--text3)'}} />
               <div style={{color:'var(--text2)',fontSize:14}}>ไม่พบรายการ</div>
-              <button onClick={()=>setFormItem(null)} style={{...addBtn,marginTop:14}}>+ เพิ่มรายการแรก</button>
+              <button onClick={()=>setFormItem(null)} style={{...addBtn,marginTop:14}}><Plus size={14} /> เพิ่มรายการแรก</button>
             </div>
           ) : viewMode==='grid' ? (
             <div style={grid}>
@@ -161,6 +134,7 @@ export default function Home() {
                   onEdit={()=>setFormItem(item)}
                   onDelete={()=>setDelItem(item)}
                   onBarcode={()=>setBarItem(item)}
+                  onClick={()=>setViewItem(item)}
                 />
               ))}
             </div>
@@ -173,7 +147,8 @@ export default function Home() {
       {formItem!==undefined && <StockForm item={formItem} onSave={handleSave} onClose={()=>setFormItem(undefined)} />}
       {barItem && <BarcodeModal item={barItem} onClose={()=>setBarItem(null)} />}
       {delItem && <DelModal item={delItem} onConfirm={()=>handleDelete(delItem)} onClose={()=>setDelItem(null)} />}
-      {toast && <div style={toastSt(toast.type)}>{toast.type==='success'?'✅':'🗑️'} {toast.msg}</div>}
+      {viewItem && <ViewModal item={viewItem} onClose={()=>setViewItem(null)} onEdit={()=>{setViewItem(null);setFormItem(viewItem)}} />}
+      {toast && <div style={toastSt(toast.type)}>{toast.type==='success'?<CheckCircle size={16} />:<Trash size={16} />} {toast.msg}</div>}
 
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -183,39 +158,39 @@ export default function Home() {
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
         a{text-decoration:none}
+        .nav-link:hover{background:rgba(255,255,255,0.15)}
       `}</style>
     </>
   )
 }
 
-function Card({item, onEdit, onDelete, onBarcode}) {
+function Card({item, onEdit, onDelete, onBarcode, onClick}) {
   const low = item.quantity <= item.minQuantity
   return (
-    <div className="card" style={cardSt}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
-        <div style={{display:'flex',alignItems:'center',gap:7}}>
-          <span style={{fontSize:20}}>{ICON[item.category]||'📦'}</span>
-          <span style={catTag}>{item.category}</span>
+    <div className="card" style={cardSt} onClick={onClick}>
+      {item.image ? (
+        <div style={cardImgWrap}>
+          <img src={item.image} alt={item.name} style={cardImg} />
         </div>
-        <span style={idTag}>{item.id}</span>
-      </div>
-      <div style={{fontWeight:600,fontSize:14,color:'var(--text)',marginBottom:2,lineHeight:1.4}}>{item.name}</div>
-      <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{item.brand} {item.model}</div>
-      {item.serial && <div style={serialTag}>S/N: {item.serial}</div>}
-
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8,marginBottom:10}}>
-        <div style={qtyBadge(low)}>
-          {low&&<span>⚠️ </span>}
-          <span style={{fontFamily:'var(--mono)',fontWeight:700,fontSize:18}}>{item.quantity}</span>
-          <span style={{fontSize:10,opacity:.7}}> ชิ้น</span>
+      ) : (
+        <div style={cardNoImg}>
+          {React.createElement(ICON[item.category] || Box, {size: 64})}
         </div>
-        {item.location && <span style={{fontSize:11,color:'var(--text3)'}}>📍 {item.location}</span>}
-      </div>
-
-      <div style={{display:'flex',gap:6,justifyContent:'flex-end'}}>
-        <IBtn title="พิมพ์ Barcode" color="var(--accent)"   onClick={onBarcode}>🏷️</IBtn>
-        <IBtn title="แก้ไข"         color="var(--success)"  onClick={onEdit}>✏️</IBtn>
-        <IBtn title="ลบ"            color="var(--danger)"   onClick={onDelete}>🗑️</IBtn>
+      )}
+      <div style={cardBody}>
+        <div style={cardName}>{item.name}</div>
+        <div style={cardMeta}>{item.brand} {item.model||''}</div>
+        <div style={cardBottom}>
+          <div style={cardQty}>
+            <span style={{fontSize:16,fontWeight:700,color:'var(--accent)',fontFamily:'var(--mono)'}}>{item.quantity}</span>
+            <span style={{fontSize:11,color:'var(--text3)'}}>ชิ้น</span>
+          </div>
+          {item.location && <div style={cardLoc}><MapPin size={12} style={{marginRight:4}} /> {item.location}</div>}
+        </div>
+        <div style={cardActions}>
+          <button onClick={e=>{e.stopPropagation();onEdit()}} style={cardActionBtn}><Edit size={12} /> แก้ไข</button>
+          <button onClick={e=>{e.stopPropagation();onDelete()}} style={{...cardActionBtn,color:'var(--danger)'}}><Trash size={12} /> ลบ</button>
+        </div>
       </div>
     </div>
   )
@@ -242,15 +217,15 @@ function TableView({items, onEdit, onDelete, onBarcode}) {
                 </td>
                 <td style={tdSt}><span style={catTag}>{item.category}</span></td>
                 <td style={tdSt}><span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--text3)'}}>{item.serial||'-'}</span></td>
-                <td style={tdSt}><span style={{...qtyBadge(low),display:'inline-flex',padding:'3px 10px'}}>
-                  {low&&'⚠️ '}<span style={{fontFamily:'var(--mono)',fontWeight:700}}>{item.quantity}</span>
+                <td style={tdSt}><span style={{...qtyBadge(low),display:'inline-flex',padding:'3px 10px',alignItems:'center',gap:4}}>
+                  {low&&<AlertTriangle size={12} />}<span style={{fontFamily:'var(--mono)',fontWeight:700}}>{item.quantity}</span>
                 </span></td>
                 <td style={tdSt}><span style={{fontSize:12,color:'var(--text3)'}}>{item.location||'-'}</span></td>
                 <td style={tdSt}>
                   <div style={{display:'flex',gap:5}}>
-                    <IBtn title="Barcode" color="var(--accent)"  onClick={()=>onBarcode(item)}>🏷️</IBtn>
-                    <IBtn title="แก้ไข"   color="var(--success)" onClick={()=>onEdit(item)}>✏️</IBtn>
-                    <IBtn title="ลบ"      color="var(--danger)"  onClick={()=>onDelete(item)}>🗑️</IBtn>
+                    <IBtn title="Barcode" color="var(--accent)"  onClick={()=>onBarcode(item)}><Barcode size={14} /></IBtn>
+                    <IBtn title="แก้ไข"   color="var(--success)" onClick={()=>onEdit(item)}><Edit size={14} /></IBtn>
+                    <IBtn title="ลบ"      color="var(--danger)"  onClick={()=>onDelete(item)}><Trash size={14} /></IBtn>
                   </div>
                 </td>
               </tr>
@@ -265,16 +240,16 @@ function TableView({items, onEdit, onDelete, onBarcode}) {
 function DelModal({item, onConfirm, onClose}) {
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,backdropFilter:'blur(4px)'}}>
-      <div style={{background:'var(--surface)',border:'1px solid var(--danger)',borderRadius:16,padding:28,maxWidth:360,width:'90%',textAlign:'center'}}>
-        <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
-        <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>ยืนยันการลบ</div>
-        <div style={{fontSize:13,color:'var(--text2)',marginBottom:4}}>
+      <div style={{background:'var(--surface)',border:'1px solid var(--danger)',borderRadius:16,padding:14,maxWidth:360,width:'90%',textAlign:'center'}}>
+        <div style={{fontSize:28,marginBottom:6}}><AlertTriangle size={28} style={{color:'var(--danger)'}} /></div>
+        <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>ยืนยันการลบ</div>
+        <div style={{fontSize:13,color:'var(--text2)',marginBottom:1}}>
           <span style={{color:'var(--accent)',fontFamily:'var(--mono)'}}>{item.id}</span>
         </div>
-        <div style={{fontSize:14,fontWeight:600,marginBottom:20}}>{item.name}</div>
-        <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-          <button onClick={onClose} style={{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:8,padding:'9px 20px',cursor:'pointer',fontSize:13}}>ยกเลิก</button>
-          <button onClick={onConfirm} style={{background:'var(--danger)',color:'white',border:'none',borderRadius:8,padding:'9px 20px',cursor:'pointer',fontSize:13,fontWeight:700}}>ลบออก</button>
+        <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>{item.name}</div>
+        <div style={{display:'flex',gap:6,justifyContent:'center'}}>
+          <button onClick={onClose} style={{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:13}}>ยกเลิก</button>
+          <button onClick={onConfirm} style={{background:'var(--danger)',color:'white',border:'none',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:13,fontWeight:700}}>ลบออก</button>
         </div>
       </div>
     </div>
@@ -288,39 +263,75 @@ function IBtn({children, onClick, color, title}) {
 function Stat({label, val, unit, color}) {
   return (
     <div style={{padding:'7px 0',borderBottom:'1px solid var(--border)'}}>
-      <div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>{label}</div>
-      <div style={{fontFamily:'var(--mono)',fontWeight:600,fontSize:14,color:color||'var(--text)'}}>
-        {val} <span style={{fontSize:10,fontWeight:400,color:'var(--text3)'}}>{unit}</span>
+      <div style={{fontSize:10,color:'#ffffff',marginBottom:2}}>{label}</div>
+      <div style={{fontFamily:'var(--mono)',fontWeight:600,fontSize:14,color:color||'#ffffff'}}>
+        {val} <span style={{fontSize:10,fontWeight:400,color:'#ffffff'}}>{unit}</span>
       </div>
     </div>
   )
 }
 
+function CategoryDropdown({ current, onSelect, isOpen, onToggle }) {
+  const Icon = ICON[current] || Box
+  return (
+    <div style={{position: 'relative'}}>
+      <button onClick={onToggle} style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '8px 12px', color: '#ffffff', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6}}>
+        <Icon size={16} />
+        <span>{current==='all'?'ทั้งหมด':current}</span>
+        <ChevronDown size={14} />
+      </button>
+      {isOpen && (
+        <div style={{position: 'absolute', right: 0, top: '100%', marginTop: 8, background: 'rgba(255,255,255,0.95)', border: '1px solid var(--border)', borderRadius: 8, padding: 8, minWidth: 160, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 1000}}>
+          {CATS.map(cat => {
+            const CatIcon = ICON[cat] || Box
+            return (
+              <button key={cat} onClick={() => { onSelect(cat); onToggle(); }} style={{width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: 6, color: cat===current?'var(--accent)':'var(--text)', cursor: 'pointer', fontSize: 12, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .15s'}}>
+                <CatIcon size={16} />
+                <span>{cat==='all'?'ทั้งหมด':cat}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── styles ──
-const layout={display:'flex',minHeight:'100vh'}
-const sidebar={width:220,background:'var(--surface)',borderRight:'1px solid var(--border)',padding:'18px 0',display:'flex',flexDirection:'column',gap:0,position:'sticky',top:0,height:'100vh',overflowY:'auto'}
-const logoArea={display:'flex',alignItems:'center',gap:10,padding:'0 18px 18px',borderBottom:'1px solid var(--border)',marginBottom:6}
+const layout={display:'flex',flexDirection:'column',minHeight:'100vh'}
+const navbar={display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 24px',position:'sticky',top:0,zIndex:100,width:'100%',backgroundImage:'url(/images/bg_navbar.jpg)',backgroundSize:'cover',backgroundPosition:'center'}
+const navbarLeft={display:'flex',alignItems:'center',gap:10}
+const navbarNav={display:'flex',alignItems:'center',gap:4}
+const navbarRight={display:'flex',alignItems:'center',gap:12}
 const logoBox={width:34,height:34,background:'var(--accent)',color:'#000',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--mono)',fontWeight:700,fontSize:12,letterSpacing:1}
-const navSection={padding:'10px 12px'}
-const navLabel={fontSize:10,color:'var(--text3)',letterSpacing:1.5,textTransform:'uppercase',padding:'0 6px',marginBottom:5}
-const navItem=(a)=>({display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,fontSize:13,color:a?'var(--accent)':'var(--text2)',background:a?'var(--accent-glow)':'transparent',border:a?'1px solid rgba(0,212,255,.2)':'1px solid transparent',marginBottom:3,fontWeight:a?600:400,transition:'all .15s'})
-const catBtn=(a)=>({display:'flex',alignItems:'center',gap:7,width:'100%',background:a?'var(--accent-glow)':'transparent',border:a?'1px solid rgba(0,212,255,.2)':'1px solid transparent',color:a?'var(--accent)':'var(--text2)',borderRadius:7,padding:'7px 10px',cursor:'pointer',fontSize:12,marginBottom:2,transition:'all .15s'})
-const countPill={fontSize:10,background:'var(--surface2)',color:'var(--text3)',padding:'1px 5px',borderRadius:8,fontFamily:'var(--mono)'}
-const statsBox={padding:'10px 12px',marginTop:'auto',borderTop:'1px solid var(--border)'}
-const mainArea={flex:1,padding:22,minWidth:0,overflowX:'hidden'}
-const toolbar={display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWrap:'wrap'}
-const searchWrap={display:'flex',alignItems:'center',gap:8,background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:9,padding:'0 12px',flex:'1 1 220px',minWidth:200}
+const navItem=(a)=>({display:'flex',alignItems:'center',gap:8,padding:'8px 14px',borderRadius:8,fontSize:13,color:'#ffffff',background:a?'var(--accent-glow)':'transparent',border:a?'1px solid rgba(0,212,255,.2)':'1px solid transparent',fontWeight:a?600:400,transition:'all .15s',cursor:'pointer'})
+const categoryBar={display:'flex',gap:6,padding:'12px 24px',background:'rgba(255,255,255,0.3)',borderBottom:'1px solid var(--border)',overflowX:'auto',width:'100%',backdropFilter:'blur(10px)'}
+const catBtn=(a)=>({display:'flex',alignItems:'center',gap:6,background:a?'var(--accent-glow)':'transparent',border:a?'1px solid rgba(0,212,255,.2)':'1px solid transparent',color:a?'var(--accent)':'var(--text2)',borderRadius:7,padding:'7px 12px',cursor:'pointer',fontSize:12,whiteSpace:'nowrap',transition:'all .15s'})
+const mainArea={flex:1,padding:24,minWidth:0,overflowX:'hidden',display:'flex',flexDirection:'column',alignItems:'center',background:'transparent'}
+const cardImgWrap={width:'100%',height:280,overflow:'hidden',borderRadius:8,marginBottom:12,background:'var(--surface2)'}
+const cardImg={width:'100%',height:'100%',objectFit:'cover'}
+const cardNoImg={width:'100%',height:280,background:'var(--surface2)',borderRadius:8,marginBottom:12,display:'flex',alignItems:'center',justifyContent:'center'}
+const cardBody={padding:12}
+const cardName={fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:4,lineHeight:1.4,height:40,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}
+const cardMeta={fontSize:11,color:'var(--text3)',marginBottom:8}
+const cardBottom={display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}
+const cardQty={display:'flex',alignItems:'baseline',gap:2}
+const cardLoc={fontSize:11,color:'var(--text3)'}
+const cardActions={display:'flex',gap:8}
+const cardActionBtn={flex:1,padding:'6px',fontSize:11,background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:6,color:'var(--text)',cursor:'pointer',transition:'all .15s'}
+const toolbar={display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWrap:'wrap',maxWidth:1400,width:'100%',background:'transparent'}
+const searchWrap={display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.95)',border:'1px solid var(--border2)',borderRadius:9,padding:'0 12px',flex:'1 1 220px',minWidth:200}
 const searchIn={background:'none',border:'none',color:'var(--text)',fontSize:13,padding:'9px 0',outline:'none',flex:1,fontFamily:'var(--sans)'}
 const clearX={background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:12}
 const sortSel={background:'var(--surface)',border:'1px solid var(--border2)',color:'var(--text)',borderRadius:8,padding:'8px 10px',fontSize:12}
 const viewToggle={display:'flex',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:8,overflow:'hidden'}
 const viewBtn=(a)=>({background:a?'var(--accent-glow)':'transparent',border:'none',color:a?'var(--accent)':'var(--text3)',padding:'8px 11px',cursor:'pointer',fontSize:16})
 const addBtn={background:'var(--accent)',color:'#000',border:'none',borderRadius:8,padding:'9px 15px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'var(--sans)',whiteSpace:'nowrap'}
-const alertBar={background:'rgba(255,184,0,.1)',border:'1px solid rgba(255,184,0,.3)',color:'var(--warning)',borderRadius:9,padding:'9px 15px',fontSize:13,marginBottom:16}
+const alertBar={background:'rgba(255,184,0,.1)',border:'1px solid rgba(255,184,0,.3)',color:'var(--warning)',borderRadius:9,padding:'9px 15px',fontSize:13,marginBottom:16,maxWidth:1400,width:'100%'}
 const centerBox={display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:280,gap:12}
 const spinner={width:34,height:34,border:'3px solid var(--border)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin .8s linear infinite'}
-const grid={display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(230px,1fr))',gap:12}
-const cardSt={background:'var(--surface)',border:'1px solid var(--border)',borderRadius:11,padding:14,transition:'all .2s ease',animation:'fadein .3s ease',cursor:'default'}
+const grid={display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,auto))',gap:16,justifyContent:'center',maxWidth:1400,width:'100%'}
+const cardSt={background:'rgba(255,255,255,0.85)',border:'1px solid var(--border)',borderRadius:12,padding:0,transition:'all .2s ease',animation:'fadein .3s ease',cursor:'pointer',overflow:'hidden'}
 const catTag={fontSize:10,background:'var(--surface2)',color:'var(--text2)',padding:'2px 7px',borderRadius:9,border:'1px solid var(--border)'}
 const idTag={fontFamily:'var(--mono)',fontSize:11,color:'var(--accent)',background:'var(--accent-glow)',padding:'3px 7px',borderRadius:6}
 const serialTag={fontFamily:'var(--mono)',fontSize:10,color:'var(--text3)',background:'rgba(255,255,255,.03)',padding:'2px 6px',borderRadius:4,marginBottom:4,letterSpacing:.4}

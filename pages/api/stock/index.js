@@ -24,6 +24,10 @@ export default function handler(req, res) {
   }
 
   if (method === 'POST') {
+    const { name, brand, quantity, location } = req.body
+    if (!name || !brand || !quantity || !location) {
+      return res.status(400).json({ message: 'name, brand, quantity, location required' })
+    }
     const items = readStock()
     const now = new Date().toISOString()
     const newItem = {

@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #0a0e1a;
-  --surface: #111827;
-  --surface2: #1a2235;
-  --border: #1e2d45;
-  --border2: #2a3f5f;
-  --accent: #00d4ff;
-  --accent2: #0099cc;
-  --accent-glow: rgba(0, 212, 255, 0.15);
-  --success: #00e5a0;
-  --warning: #ffb800;
-  --danger: #ff4d6a;
-  --text: #e2eaf5;
-  --text2: #7a8fa8;
-  --text3: #4a5f7a;
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --surface2: #e2e8f0;
+  --border: #cbd5e1;
+  --border2: #94a3b8;
+  --accent: #1e40af;
+  --accent2: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.1);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --text: #1e293b;
+  --text2: #475569;
+  --text3: #64748b;
   --mono: 'IBM Plex Mono', monospace;
   --sans: 'IBM Plex Sans Thai', sans-serif;
 }
@@ -26,15 +26,12 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(0, 212, 255, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(0, 153, 204, 0.03) 0%, transparent 50%);
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-track { background: var(--surface2); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 @media print {
   body { background: white; color: black; }

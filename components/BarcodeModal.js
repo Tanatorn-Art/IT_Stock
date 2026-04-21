@@ -117,16 +117,16 @@ export default function BarcodeModal({ item, onClose }) {
 }
 
 const overlay = { position:'fixed',inset:0,background:'rgba(0,0,0,0.78)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,backdropFilter:'blur(4px)',padding:20 }
-const modal = { background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:16,padding:26,width:'100%',maxWidth:420,boxShadow:'0 24px 60px rgba(0,0,0,0.6)' }
-const hdr = { display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18 }
+const modal = { background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:16,padding:14,width:'100%',maxWidth:420,boxShadow:'0 24px 60px rgba(0,0,0,0.6)' }
+const hdr = { display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10 }
 const subttl = { fontSize:10,color:'var(--text3)',letterSpacing:2,textTransform:'uppercase',fontFamily:'var(--mono)' }
 const ttl = { fontSize:15,fontWeight:700,color:'var(--accent)',marginTop:2 }
 const xBtn = { background:'var(--surface2)',border:'1px solid var(--border)',color:'var(--text2)',width:30,height:30,borderRadius:7,cursor:'pointer',fontSize:13 }
-const previewWrap = { background:'#e8e8e8',borderRadius:10,padding:16,marginBottom:18,display:'flex',justifyContent:'center',border:'1px dashed #ccc' }
+const previewWrap = { background:'#e8e8e8',borderRadius:10,padding:10,marginBottom:10,display:'flex',justifyContent:'center',border:'1px dashed #ccc' }
 const labelCard = { background:'#fff',border:'1.5px solid #aaa',borderRadius:4,padding:'7px 10px',width:210,boxShadow:'0 3px 10px rgba(0,0,0,0.25)' }
-const ctrlRow = { display:'flex',gap:14,marginBottom:18 }
-const ctrlBox = { flex:1,background:'var(--surface2)',borderRadius:10,padding:14,border:'1px solid var(--border)' }
-const ctrlLbl = { fontSize:10,color:'var(--text3)',letterSpacing:1,textTransform:'uppercase',marginBottom:8 }
+const ctrlRow = { display:'flex',gap:8,marginBottom:10 }
+const ctrlBox = { flex:1,background:'var(--surface2)',borderRadius:10,padding:8,border:'1px solid var(--border)' }
+const ctrlLbl = { fontSize:10,color:'var(--text3)',letterSpacing:1,textTransform:'uppercase',marginBottom:4 }
 const stepBtn = { background:'var(--surface)',border:'1px solid var(--border2)',color:'var(--text)',width:32,height:32,borderRadius:8,cursor:'pointer',fontSize:18 }
-const allBtn = { marginTop:8,width:'100%',background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:7,padding:'6px 0',fontSize:11,cursor:'pointer' }
-const printBtn = { width:'100%',background:'var(--accent)',color:'#000',border:'none',borderRadius:10,padding:'13px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:'var(--sans)',letterSpacing:.3 }
+const allBtn = { marginTop:4,width:'100%',background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:7,padding:'5px 0',fontSize:11,cursor:'pointer' }
+const printBtn = { width:'100%',background:'var(--accent)',color:'#000',border:'none',borderRadius:10,padding:'9px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:'var(--sans)',letterSpacing:.3 }

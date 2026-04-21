@@ -10,6 +10,8 @@ export default function ScanPage() {
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
   const [by, setBy] = useState('')
+  const [location, setLocation] = useState('')
+  const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null) // last transaction result
   const [recentTxns, setRecentTxns] = useState([])
@@ -18,12 +20,19 @@ export default function ScanPage() {
   useEffect(() => {
     inputRef.current?.focus()
     fetchRecent()
+    fetchLocations()
   }, [])
 
   const fetchRecent = async () => {
     const res = await fetch('/api/transactions?limit=8')
     const data = await res.json()
     setRecentTxns(data)
+  }
+
+  const fetchLocations = async () => {
+    const res = await fetch('/api/locations')
+    const data = await res.json()
+    setLocations(data)
   }
 
   const handleSearch = async (val) => {
@@ -53,7 +62,7 @@ export default function ScanPage() {
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: found.id, type: mode, qty, note, by }),
+        body: JSON.stringify({ itemId: found.id, type: mode, qty, note, by, location }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -64,6 +73,7 @@ export default function ScanPage() {
       setFound(data.item)
       setInput('')
       setNote('')
+      setLocation('')
       setQty(1)
       fetchRecent()
       setTimeout(() => inputRef.current?.focus(), 100)
@@ -167,6 +177,10 @@ export default function ScanPage() {
 
                 <input style={noteInput} value={note} onChange={e=>setNote(e.target.value)} placeholder="หมายเหตุ (ไม่บังคับ)" />
                 <input style={noteInput} value={by} onChange={e=>setBy(e.target.value)} placeholder="ผู้ดำเนินการ (ไม่บังคับ)" />
+                <select style={noteInput} value={location} onChange={e=>setLocation(e.target.value)}>
+                  <option value="">-- เลือกที่เก็บ/ตำแหน่ง --</option>
+                  {locations.map(loc => <option key={loc.id} value={loc.name}>{loc.name}</option>)}
+                </select>
 
                 <button onClick={handleSubmit} disabled={loading || (mode==='OUT' && qty > found.quantity)} style={submitBtn(mode)}>
                   {loading ? '⏳ กำลังบันทึก...' : (mode === 'IN' ? `📥 รับเข้า ${qty} ชิ้น` : `📤 นำออก ${qty} ชิ้น`)}
@@ -196,6 +210,7 @@ export default function ScanPage() {
                       {t.type==='IN'?'+':'-'}{t.qty} → <b>{t.qtyAfter}</b>
                     </span>
                   </div>
+                  {t.location && <div style={{ fontSize:10, color:'var(--text3)', marginTop:1 }}>📍 {t.location}</div>}
                   {t.note && <div style={{ fontSize:10, color:'var(--text3)', marginTop:1 }}>💬 {t.note}</div>}
                   <div style={{ fontSize:9, color:'var(--text3)', marginTop:2 }}>{new Date(t.createdAt).toLocaleString('th-TH')}</div>
                 </div>
