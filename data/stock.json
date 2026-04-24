@@ -6,13 +6,13 @@
     "brand": "Apple",
     "model": "MPHF3TH/A",
     "serial": "C02ZW1ABMD6T",
-    "quantity": 5,
+    "quantity": 9,
     "minQuantity": 2,
     "location": "ชั้น A-1",
     "status": "active",
     "description": "MacBook Pro 14 นิ้ว ชิป M3, RAM 8GB, SSD 512GB",
     "createdAt": "2024-01-15T08:00:00.000Z",
-    "updatedAt": "2026-04-21T09:19:00.014Z",
+    "updatedAt": "2026-04-22T09:48:14.880Z",
     "image": "/images/1776763138903-fbc5801958cf6876737814e5f8998f90.jpg"
   },
   {

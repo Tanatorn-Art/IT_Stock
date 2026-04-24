@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import ShelfMap from '../components/Shelfmap'
 import Shelfmap_metal from '../components/Shelfmap_metal'
-import { Package, MapPin, Scan } from 'lucide-react'
+import { Package, MapPin, Scan, Settings, Loader2, Save, Plus } from 'lucide-react'
 
 export default function LocationPage() {
   const router = useRouter()
@@ -131,6 +131,7 @@ export default function LocationPage() {
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(true)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
+              <Link href="/settings" className="nav-link" style={navItem(false)}><Settings size={16} /> ตั้งค่า</Link>
             </div>
             <div style={navbarRight}>
               <Stat label="ตำแหน่ง" val={locations.length} unit="รายการ" />
@@ -214,6 +215,7 @@ export default function LocationPage() {
 
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
+        .spin{animation:spin 1s linear infinite}
         @keyframes toast-in{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes modal-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -623,7 +625,7 @@ function LocationForm({ location, onSave, onClose }) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={CB}>ยกเลิก</button>
           <button onClick={handleSubmit} disabled={saving} style={{ ...SB, opacity: saving ? 0.7 : 1 }}>
-            {saving ? '⏳ กำลังบันทึก...' : isEdit ? '💾 บันทึก' : '➕ เพิ่มตำแหน่ง'}
+            {saving ? <><Loader2 size={16} className="spin" /> กำลังบันทึก...</> : isEdit ? <><Save size={16} /> บันทึก</> : <><Plus size={16} /> เพิ่มตำแหน่ง</>}
           </button>
         </div>
       </div>

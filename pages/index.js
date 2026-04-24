@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Package, MapPin, Scan, Search, Plus, AlertTriangle, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, Edit, Trash, X, CheckCircle, XCircle, Barcode } from 'lucide-react'
+import { Package, MapPin, Scan, Search, Plus, AlertTriangle, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, Edit, Trash, X, CheckCircle, XCircle, Barcode, Settings } from 'lucide-react'
 
 const BarcodeModal = dynamic(() => import('../components/BarcodeModal'), { ssr: false })
 const StockForm    = dynamic(() => import('../components/StockForm'),    { ssr: false })
@@ -88,6 +88,7 @@ export default function Home() {
               <Link href="/" className="nav-link" style={navItem(true)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(false)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
+              <Link href="/settings" className="nav-link" style={navItem(false)}><Settings size={16} /> ตั้งค่า</Link>
             </div>
             <div style={navbarRight}>
               <CategoryDropdown current={category} onSelect={setCategory} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
