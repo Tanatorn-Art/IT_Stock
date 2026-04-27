@@ -109,7 +109,7 @@ export default function Home() {
               {search && <button onClick={()=>setSearch('')} style={clearX}><X size={12} /></button>}
             </div>
 
-            <button onClick={()=>setFormItem(null)} style={addBtn}><Plus size={14} /> เพิ่มอุปกรณ์</button>
+            {/* <button onClick={()=>setFormItem(null)} style={addBtn}><Plus size={14} /> เพิ่มอุปกรณ์</button> */}
           </div>
 
           {/* Alert */}
@@ -148,7 +148,7 @@ export default function Home() {
       {formItem!==undefined && <StockForm item={formItem} onSave={handleSave} onClose={()=>setFormItem(undefined)} />}
       {barItem && <BarcodeModal item={barItem} onClose={()=>setBarItem(null)} />}
       {delItem && <DelModal item={delItem} onConfirm={()=>handleDelete(delItem)} onClose={()=>setDelItem(null)} />}
-      {viewItem && <ViewModal item={viewItem} onClose={()=>setViewItem(null)} onEdit={()=>{setViewItem(null);setFormItem(viewItem)}} />}
+      {viewItem && <ViewModal item={viewItem} onClose={()=>setViewItem(null)} />}
       {toast && <div style={toastSt(toast.type)}>{toast.type==='success'?<CheckCircle size={16} />:<Trash size={16} />} {toast.msg}</div>}
 
       <style>{`
@@ -188,10 +188,6 @@ function Card({item, onEdit, onDelete, onBarcode, onClick}) {
           </div>
           {item.location && <div style={cardLoc}><MapPin size={12} style={{marginRight:4}} /> {item.location}</div>}
         </div>
-        <div style={cardActions}>
-          <button onClick={e=>{e.stopPropagation();onEdit()}} style={cardActionBtn}><Edit size={12} /> แก้ไข</button>
-          <button onClick={e=>{e.stopPropagation();onDelete()}} style={{...cardActionBtn,color:'var(--danger)'}}><Trash size={12} /> ลบ</button>
-        </div>
       </div>
     </div>
   )
@@ -202,7 +198,7 @@ function TableView({items, onEdit, onDelete, onBarcode}) {
     <div style={{overflowX:'auto',animation:'fadein .3s ease'}}>
       <table style={{width:'100%',borderCollapse:'separate',borderSpacing:'0 3px'}}>
         <thead>
-          <tr>{['ID','อุปกรณ์','หมวดหมู่','Serial','จำนวน','ที่เก็บ','Actions'].map(h=>(
+          <tr>{['ID','อุปกรณ์','หมวดหมู่','Serial','จำนวน','ที่เก็บ'].map(h=>(
             <th key={h} style={thSt}>{h}</th>
           ))}</tr>
         </thead>
@@ -225,8 +221,6 @@ function TableView({items, onEdit, onDelete, onBarcode}) {
                 <td style={tdSt}>
                   <div style={{display:'flex',gap:5}}>
                     <IBtn title="Barcode" color="var(--accent)"  onClick={()=>onBarcode(item)}><Barcode size={14} /></IBtn>
-                    <IBtn title="แก้ไข"   color="var(--success)" onClick={()=>onEdit(item)}><Edit size={14} /></IBtn>
-                    <IBtn title="ลบ"      color="var(--danger)"  onClick={()=>onDelete(item)}><Trash size={14} /></IBtn>
                   </div>
                 </td>
               </tr>

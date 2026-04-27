@@ -20,9 +20,9 @@ export default function ViewModal({ item, onClose, onEdit }) {
     <div style={OV} onClick={onClose}>
       <div style={MO} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={HDR}>
+        {/* <div style={HDR}>
           <button onClick={onClose} style={XB}><X size={16} /></button>
-        </div>
+        </div> */}
 
         {/* Content - Horizontal Layout */}
         <div style={CONTENT}>
@@ -106,10 +106,9 @@ export default function ViewModal({ item, onClose, onEdit }) {
         </div>
 
         {/* Action Buttons */}
-        <div style={ACTIONS}>
+        {/* <div style={ACTIONS}>
           <button onClick={onClose} style={BTN_CLOSE}>ปิด</button>
-          <button onClick={onEdit} style={BTN_EDIT}><Edit size={14} style={{marginRight:6}} /> แก้ไข</button>
-        </div>
+        </div> */}
       </div>
     </div>
   )
@@ -119,7 +118,7 @@ const OV={position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',a
 const MO={background:'#ffffff',borderRadius:16,width:'100%',maxWidth:800,boxShadow:'0 4px 24px rgba(0,0,0,0.15)',overflow:'hidden',display:'flex',flexDirection:'column'}
 const HDR={display:'flex',justifyContent:'flex-end',padding:12,background:'#ffffff'}
 const XB={background:'transparent',border:'none',color:'var(--text2)',width:32,height:32,borderRadius:8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background .15s'}
-const CONTENT={display:'flex',flexDirection:'row',gap:0}
+const CONTENT={display:'flex',flexDirection:'row',gap:0, padding: 10}
 const IMG_WRAP={width:'400px',height:'auto',minHeight:400,background:'#ffffff',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0,padding:20}
 const IMG={width:'100%',height:'100%',objectFit:'contain',borderRadius:6}
 const NO_IMG={display:'flex',alignItems:'center',justifyContent:'center',width:'100%',height:'100%',color:'var(--text3)'}

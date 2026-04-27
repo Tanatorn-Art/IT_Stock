@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
-import { Package, MapPin, Scan, Search, Plus, AlertTriangle, Edit, Trash, X, CheckCircle, Settings, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box } from 'lucide-react'
+import { Package, MapPin, Scan, Search, Plus, AlertTriangle, Edit, Trash, X, CheckCircle, Settings, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, FileText, Save, Loader2 } from 'lucide-react'
 
 const StockForm = dynamic(() => import('../components/StockForm'), { ssr: false })
 
@@ -10,6 +11,7 @@ const CATS = ['all','Laptop','Desktop','Monitor','Peripheral','Network','Server'
 const ICON = {Laptop:Laptop,Desktop:Monitor,Monitor:Monitor,Peripheral:Mouse,Network:Network,Server:Server,Storage:HardDrive,Phone:Smartphone,Tablet:Tablet,Other:Box,all:Box}
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [items,    setItems]    = useState([])
   const [loading,  setLoading]  = useState(true)
   const [search,   setSearch]   = useState('')
@@ -38,22 +40,55 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
+  // Sync selected item with URL
+  useEffect(() => {
+    if (router.isReady && items.length > 0) {
+      const { id } = router.query
+      if (id) {
+        const item = items.find(i => i.id === id)
+        if (item) {
+          setSelectedItem(item)
+        }
+      } else {
+        setSelectedItem(null)
+      }
+    }
+  }, [router.isReady, router.query, items])
+
   const handleSave = (saved) => {
     setFormItem(undefined)
     fetchItems()
     showToast(formItem===null ? `เพิ่ม ${saved.id} สำเร็จ` : `อัปเดต ${saved.id} สำเร็จ`)
   }
 
+  const handleInlineEdit = (saved) => {
+    // Update local items immediately to show the new image
+    setItems(prevItems =>
+      prevItems.map(item => item.id === saved.id ? saved : item)
+    )
+    // Also update selected item if it's the one being edited
+    if (selectedItem && selectedItem.id === saved.id) {
+      setSelectedItem(saved)
+    }
+    // Then fetch items to ensure server sync
+    fetchItems()
+    showToast(`อัปเดต ${saved.id} สำเร็จ`)
+  }
+
   const handleDelete = async (item) => {
     await fetch(`/api/stock/${item.id}`, { method:'DELETE' })
     setDelItem(null)
     setSelectedItem(null)
+    router.push({ pathname: '/settings' }, undefined, { shallow: true })
     fetchItems()
     showToast(`ลบ ${item.id} เรียบร้อย`, 'danger')
   }
 
   const handleRowClick = (item) => {
     setSelectedItem(item)
+    router.push({ pathname: '/settings', query: { id: item.id } }, undefined, { shallow: true })
+    // Auto-scroll to top to show the detail panel
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const sorted = [...items].sort((a,b) => a.id.localeCompare(b.id))
@@ -132,7 +167,7 @@ export default function SettingsPage() {
             </div>
           ) : (
             <>
-              {selectedItem && <DetailPanel item={selectedItem} onClose={()=>setSelectedItem(null)} onEdit={()=>{setSelectedItem(null);setFormItem(selectedItem)}} onDelete={()=>setDelItem(selectedItem)} />}
+              {selectedItem && <DetailPanel item={selectedItem} onClose={()=>{setSelectedItem(null); router.push({ pathname: '/settings' }, undefined, { shallow: true })}} onEdit={handleInlineEdit} onDelete={()=>setDelItem(selectedItem)} />}
               <TableView items={filtered} selected={selectedItem} onRowClick={handleRowClick} onEdit={setFormItem} onDelete={setDelItem} />
             </>
           )}
@@ -158,35 +193,536 @@ export default function SettingsPage() {
 }
 
 function DetailPanel({ item, onClose, onEdit, onDelete }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState(item)
+  const [saving, setSaving] = useState(false)
+  const [newImageFile, setNewImageFile] = useState(null) // Store new image file until save
+  const [originalImage, setOriginalImage] = useState(item?.image || '') // Track original server image
+  const [originalImageFilename, setOriginalImageFilename] = useState(item?.image?.split('/').pop() || '') // Track original filename
+  const [locations, setLocations] = useState([])
   const Icon = ICON[item.category] || Box
-  const low = item.quantity <= item.minQuantity
+  const low = editForm.quantity <= editForm.minQuantity
+
+  // Fetch locations
+  useEffect(() => {
+    fetchLocations()
+  }, [])
+
+  const fetchLocations = async () => {
+    const res = await fetch('/api/locations')
+    const data = await res.json()
+    setLocations(data)
+  }
+
+  // Reset editForm when item changes (but not during save operations)
+  useEffect(() => {
+    if (!saving) {
+      // Add cache-busting to image URL to force fresh load on page refresh
+      const itemWithCacheBusting = {
+        ...item,
+        image: item?.image ? `${item.image}?_refresh=${Date.now()}` : ''
+      }
+
+      setEditForm(itemWithCacheBusting)
+      setIsEditing(false)
+      setOriginalImage(itemWithCacheBusting.image || '')
+      setOriginalImageFilename(item?.image?.split('/').pop() || '')
+    }
+  }, [item, saving])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      let finalImageData = editForm.image
+
+      // Upload new image if there is one
+      if (newImageFile) {
+        // Delete original image if it exists and is a server path (not blob URL)
+        if (originalImage && originalImage && !originalImage.startsWith('blob:')) {
+          try {
+            await fetch('/api/delete-image', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imagePath: originalImage }),
+            })
+            console.log('Deleted original image:', originalImage)
+          } catch (error) {
+            console.warn('Failed to delete old image:', error)
+          }
+        }
+
+        // Convert and upload new image
+        const webpBlob = await convertToWebP(newImageFile)
+        const reader = new FileReader()
+
+        await new Promise((resolve, reject) => {
+          reader.onloadend = async () => {
+            try {
+              const base64 = reader.result
+              // Reuse existing filename if available, otherwise create new one
+              let filename
+              if (originalImageFilename) {
+                // Keep the same filename to replace the existing file
+                const nameWithoutExt = originalImageFilename.split('.').slice(0, -1).join('.')
+                filename = `${nameWithoutExt}.webp`
+              } else if (item?.id) {
+                // Create new filename using stock item ID
+                const cleanName = newImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '').split('.').slice(0, -1).join('.')
+                filename = `${item.id}-${cleanName}.webp`
+              } else {
+                // Create new filename (should not happen in DetailPanel since item always exists)
+                filename = `temp-${Date.now()}-${newImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '').split('.').slice(0, -1).join('.')}.webp`
+              }
+
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64, filename }),
+              })
+              const data = await res.json()
+              if (data.path) {
+                finalImageData = data.path
+                resolve()
+              } else {
+                reject(new Error('Upload failed'))
+              }
+            } catch (error) {
+              reject(error)
+            }
+          }
+          reader.readAsDataURL(webpBlob)
+        })
+      }
+
+      // Submit form with final image data
+      const res = await fetch(`/api/stock/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editForm,
+          image: finalImageData,
+          quantity: Number(editForm.quantity),
+          minQuantity: Number(editForm.minQuantity)
+        }),
+      })
+      if (!res.ok) throw new Error()
+      const saved = await res.json()
+      setIsEditing(false)
+      // Update form state with new image data
+      const updatedForm = {
+        ...saved,
+        image: finalImageData // Ensure we use the uploaded image path
+      }
+      setEditForm(updatedForm)
+      setNewImageFile(null)
+      setOriginalImage(finalImageData || '')
+      setOriginalImageFilename(finalImageData?.split('/').pop() || '')
+
+      // Force image reload by adding cache-busting parameter
+      if (finalImageData) {
+        const timestamp = Date.now()
+        const cacheBustedImage = `${finalImageData}?t=${timestamp}`
+
+        // Update form with cache-busted image
+        setEditForm(prev => ({ ...prev, image: cacheBustedImage }))
+
+        // Update parent component with cache-busted image
+        onEdit({ ...updatedForm, image: cacheBustedImage })
+
+        // Update original image tracking
+        setOriginalImage(cacheBustedImage)
+        setOriginalImageFilename(finalImageData?.split('/').pop() || '')
+      } else {
+        // Update parent component's item
+        onEdit(updatedForm)
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+      alert('เกิดข้อผิดพลาด')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    // Clean up blob URL if it exists
+    if (editForm.image && editForm.image.startsWith('blob:')) {
+      URL.revokeObjectURL(editForm.image)
+    }
+    setEditForm(item)
+    setIsEditing(false)
+    setNewImageFile(null)
+    setOriginalImage(item?.image || '')
+    setOriginalImageFilename(item?.image?.split('/').pop() || '')
+  }
+
+  const setField = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const convertToWebP = (file) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+
+      img.onload = () => {
+        // Set canvas dimensions
+        canvas.width = img.width
+        canvas.height = img.height
+
+        // Draw image to canvas
+        ctx.drawImage(img, 0, 0)
+
+        // Convert to WebP with 80% quality (good balance between quality and size)
+        canvas.toBlob((blob) => {
+          resolve(blob)
+        }, 'image/webp', 0.8)
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Store the file for later upload on save
+      setNewImageFile(file)
+      // Create a preview URL for immediate display
+      const previewUrl = URL.createObjectURL(file)
+      setField('image', previewUrl)
+    }
+  }
+
+  const handleRemoveImage = async () => {
+    // Clean up blob URL if it exists
+    if (editForm.image && editForm.image.startsWith('blob:')) {
+      URL.revokeObjectURL(editForm.image)
+    }
+
+    // Delete original image from server if it exists and is not a blob URL
+    if (originalImage && originalImage && !originalImage.startsWith('blob:')) {
+      try {
+        await fetch('/api/delete-image', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imagePath: originalImage }),
+        })
+        console.log('Deleted original image:', originalImage)
+      } catch (error) {
+        console.warn('Failed to delete image:', error)
+        // Continue with form update even if deletion fails
+      }
+    }
+
+    // Clear the new image file, form image, and original image tracking
+    setNewImageFile(null)
+    setOriginalImage('')
+    setOriginalImageFilename('')
+    setField('image', '')
+  }
+
   return (
-    <div style={{background:'rgba(255,255,255,0.95)',border:'1px solid var(--accent)',borderRadius:12,padding:'16px',marginBottom:16,maxWidth:1400,width:'100%',animation:'fadein .2s ease'}}>
-      <div style={{display:'flex',alignItems:'flex-start',gap:16}}>
-        <div style={{width:56,height:56,borderRadius:10,background:'rgba(59,130,246,0.1)',border:'1px solid rgba(59,130,246,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon size={32} style={{color:'var(--accent)'}} />
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-            <span style={{fontFamily:'var(--mono)',color:'var(--accent)',fontSize:13,fontWeight:700}}>{item.id}</span>
-            <span style={catTag}>{item.category}</span>
-            {low && <span style={{display:'inline-flex',alignItems:'center',gap:4,background:'rgba(239,68,68,0.15)',color:'var(--danger)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:6,padding:'2px 8px',fontSize:11}}><AlertTriangle size={12} /> Stock ใกล้หมด</span>}
+    <div style={{background:'white',borderRadius:12,boxShadow:'0 4px 20px rgba(0,0,0,0.08)',marginBottom:16,maxWidth:1400,width:'100%',animation:'fadein .2s ease',overflow:'hidden'}}>
+      {/* Product Header */}
+      <div style={{background:`url('/images/EDIT_BG.png') center/cover`,padding:'10px 14px',color:'white',position:'relative'}}>
+        <div style={{position:'absolute',inset:0}}></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',position:'relative',zIndex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            {/* <div style={{background:'rgba(255,255,255,0.2)',padding:'8px',borderRadius:8,backdropFilter:'blur(10px)'}}>
+              {React.createElement(Icon, {size: 24, color:'white'})}
+            </div> */}
+            <div>
+              <div style={{fontSize:17,opacity:0.9,fontWeight:500, marginTop: -10}}>รหัสรายการ</div>
+              <div style={{fontSize:35,fontWeight:700,letterSpacing:1, marginTop: -10, marginBottom: -15}}>{item.id}</div>
+            </div>
           </div>
-          <div style={{fontSize:18,fontWeight:700,color:'var(--text)',marginBottom:6}}>{item.name}</div>
-          <div style={{fontSize:13,color:'var(--text2)',marginBottom:12}}>{item.brand} {item.model}</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:12}}>
-            <div><div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>Serial Number</div><div style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--text)'}}>{item.serial || '-'}</div></div>
-            <div><div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>จำนวน</div><div style={{fontFamily:'var(--mono)',fontSize:13,fontWeight:600,color:low?'var(--danger)':'var(--success)'}}>{item.quantity} ชิ้น</div></div>
-            <div><div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>ขั้นต่ำ</div><div style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--text)'}}>{item.minQuantity} ชิ้น</div></div>
-            <div><div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>ที่เก็บ</div><div style={{fontSize:12,color:'var(--text)'}}>{item.location || '-'}</div></div>
+          <div style={{display:'flex',gap:8}}>
+            {isEditing ? (
+              <>
+                <button onClick={handleCancel} style={{background:'rgba(255,255,255,0.15)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.3)',color:'white',borderRadius:8,padding:'10px 20px',fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,boxShadow:'0 4px 15px rgba(0,0,0,0.1)'}}>
+                  <X size={16} />
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    background:'rgba(25,135,84,0.8)',
+                    backdropFilter:'blur(10px)',
+                    border:'1px solid rgba(255,255,255,0.3)',
+                    color:'white',
+                    borderRadius:8,
+                    padding:'10px 20px',
+                    fontSize:14,
+                    fontWeight:600,
+                    cursor:'pointer',
+                    display:'flex',
+                    alignItems:'center',
+                    gap:6,
+                    boxShadow:'0 4px 15px rgba(25,135,84,0.3)'
+                  }}
+                >
+                  {saving ? <><Loader2 size={16} className="spin" /> กำลังบันทึก...</> : <><Save size={16} /> บันทึก</>}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setIsEditing(true)} style={{background:'rgba(255,255,255,0.15)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.3)',color:'white',borderRadius:8,padding:'10px 20px',fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,boxShadow:'0 4px 15px rgba(0,0,0,0.1)'}}>
+                  <Edit size={16} />
+                  แก้ไข
+                </button>
+                <button onClick={onDelete} style={{background:'rgba(220,53,69,0.8)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.3)',color:'white',borderRadius:8,padding:'10px 20px',fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,boxShadow:'0 4px 15px rgba(220,53,69,0.3)'}}>
+                  <Trash size={16} />
+                  ลบ
+                </button>
+              </>
+            )}
           </div>
-        </div>
-        <div style={{display:'flex',flexDirection:'column',gap:8,flexShrink:0}}>
-          <button onClick={onEdit} style={{background:'var(--accent)',color:'#000',border:'none',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}><Edit size={14} /> แก้ไข</button>
-          <button onClick={onDelete} style={{background:'transparent',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}><Trash size={14} /> ลบ</button>
-          <button onClick={onClose} style={{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:8,padding:'8px 16px',fontSize:12,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}><X size={14} /> ปิด</button>
         </div>
       </div>
+
+      {/* Product Content */}
+      <div style={{display:'flex',gap:0}}>
+        {/* Left Side - Image Gallery */}
+        <div style={{flex:'0 0 500px',background:'#f8f9fa',padding:'18px',borderRight:'1px solid #e9ecef'}}>
+          <div style={{position:'relative'}}>
+            {/* Main Image */}
+            <div style={{aspectRatio:1,background:'white',borderRadius:12,overflow:'hidden',border:'1px solid #e9ecef',position:'relative'}}>
+              {isEditing ? (
+                <>
+                  {editForm.image ? (
+                    <img src={editForm.image} alt={editForm.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  ) : (
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#6c757d'}}>
+                      <Package size={64} />
+                      <span style={{marginTop:12,fontSize:14,fontWeight:500}}>ไม่มีรูปภาพ</span>
+                      <span style={{marginTop:4,fontSize:12,opacity:0.7}}>คลิกเพื่ออัปโหลด</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    style={{position:'absolute',inset:0,opacity:0,cursor:'pointer'}}
+                  />
+                </>
+              ) : (
+                <>
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  ) : (
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#6c757d'}}>
+                      <Icon size={64} />
+                      <span style={{marginTop:12,fontSize:14,fontWeight:500}}>ไม่มีรูปภาพ</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Image Controls */}
+            {isEditing && (
+              <div style={{marginTop:16,display:'flex',gap:8}}>
+                {editForm.image && (
+                  <button onClick={handleRemoveImage} style={{flex:1,background:'#dc3545',color:'white',border:'none',borderRadius:8,padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                    <X size={16} />
+                    ลบรูป
+                  </button>
+                )}
+                <div style={{flex:1,background:'#6c757d',color:'white',borderRadius:8,padding:'10px',fontSize:12,fontWeight:600,textAlign:'center'}}>
+                  คลิกที่รูปเพื่อเปลี่ยน
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Info Cards */}
+          <div style={{marginTop:24,display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div style={{background:'white',padding:'16px',borderRadius:10,border:'1px solid #e9ecef',textAlign:'center'}}>
+              <div style={{fontSize:24,fontWeight:700,color:low ? '#dc3545' : '#28a745',fontFamily:'var(--mono)'}}>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    style={{background:'transparent',border:'none',fontSize:24,fontWeight:700,color:low ? '#dc3545' : '#28a745',width:'100%',textAlign:'center',outline:'none'}}
+                    value={editForm.quantity}
+                    onChange={e=>setField('quantity',e.target.value)}
+                  />
+                ) : (
+                  item.quantity
+                )}
+              </div>
+              <div style={{fontSize:12,color:'#6c757d',marginTop:4}}>คงเหลือ</div>
+            </div>
+            <div style={{background:'white',padding:'16px',borderRadius:10,border:'1px solid #e9ecef',textAlign:'center'}}>
+              <div style={{fontSize:24,fontWeight:700,color:'#6f42c1',fontFamily:'var(--mono)'}}>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    style={{background:'transparent',border:'none',fontSize:24,fontWeight:700,color:'#6f42c1',width:'100%',textAlign:'center',outline:'none'}}
+                    value={editForm.minQuantity}
+                    onChange={e=>setField('minQuantity',e.target.value)}
+                  />
+                ) : (
+                  item.minQuantity
+                )}
+              </div>
+              <div style={{fontSize:12,color:'#6c757d',marginTop:4}}>แจ้งเตือน</div>
+            </div>
+          </div>
+
+          {/* Status Badge */}
+          <div style={{marginTop:16,display:'flex',justifyContent:'center'}}>
+            <div style={{
+              background: low ? '#f8d7da' : '#d4edda',
+              color: low ? '#721c24' : '#155724',
+              padding:'8px 16px',
+              borderRadius:20,
+              fontSize:13,
+              fontWeight:600,
+              display:'flex',
+              alignItems:'center',
+              gap:6,
+              border: `1px solid ${low ? '#f5c6cb' : '#c3e6cb'}`
+            }}>
+              <AlertTriangle size={16} />
+              {low ? 'Stock ใกล้หมด' : 'พร้อมใช้งาน'}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Product Details */}
+        <div style={{flex:1,padding:'32px'}}>
+          {/* Product Title Section */}
+          <div style={{marginBottom:32}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+              <div style={{background:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',color:'white',padding:'6px 12px',borderRadius:20,fontSize:12,fontWeight:600,textTransform:'uppercase',letterSpacing:0.5}}>
+                {item.category}
+              </div>
+              {low && (
+                <div style={{background:'#fff3cd',color:'#856404',padding:'6px 12px',borderRadius:20,fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
+                  <AlertTriangle size={14} />
+                  ต้องเติมสต็อก
+                </div>
+              )}
+            </div>
+            <h1 style={{fontSize:28,fontWeight:700,color:'#2c3e50',margin:0,lineHeight:1.2,marginBottom:8}}>
+              {isEditing ? (
+                <input
+                  style={{background:'transparent',border:'none',fontSize:28,fontWeight:700,color:'#2c3e50',width:'100%',outline:'none',padding:0,borderBottom:'2px solid #e9ecef'}}
+                  value={editForm.name}
+                  onChange={e=>setField('name',e.target.value)}
+                  placeholder="ชื่ออุปกรณ์"
+                />
+              ) : (
+                item.name
+              )}
+            </h1>
+            <div style={{fontSize:16,color:'#6c757d',display:'flex',alignItems:'center',gap:8}}>
+              <MapPin size={16} />
+              {isEditing ? (
+                <select
+                  style={{background:'transparent',border:'none',fontSize:16,color:'#6c757d',outline:'none',padding:'4px 8px',borderRadius:4,border:'1px solid #e9ecef'}}
+                  value={editForm.location}
+                  onChange={e=>setField('location',e.target.value)}
+                >
+                  <option value="">-- เลือกที่เก็บ/ตำแหน่ง --</option>
+                  {locations.map(loc => <option key={loc.id} value={loc.name}>{loc.name}</option>)}
+                </select>
+              ) : (
+                item.location || 'ไม่ระบุตำแหน่ง'
+              )}
+            </div>
+          </div>
+
+          {/* Product Specifications */}
+          <div style={{background:'#f8f9fa',borderRadius:12,padding:'24px',marginBottom:24}}>
+            <h2 style={{fontSize:18,fontWeight:600,color:'#2c3e50',margin:'0 0 20px 0',display:'flex',alignItems:'center',gap:8}}>
+              <Package size={20} />
+              ข้อมูลจำเพาะ
+            </h2>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:20}}>
+              <div>
+                <label style={{fontSize:12,color:'#6c757d',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,display:'block',marginBottom:6}}>ยี่ห้อ</label>
+                {isEditing ? (
+                  <input
+                    style={{background:'white',border:'1px solid #e9ecef',borderRadius:8,padding:'10px 12px',fontSize:14,width:'100%',outline:'none',transition:'all 0.2s'}}
+                    value={editForm.brand}
+                    onChange={e=>setField('brand',e.target.value)}
+                    placeholder="กรอกยี่ห้อ"
+                  />
+                ) : (
+                  <div style={{fontSize:16,fontWeight:500,color:'#2c3e50'}}>{item.brand || '-'}</div>
+                )}
+              </div>
+              <div>
+                <label style={{fontSize:12,color:'#6c757d',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,display:'block',marginBottom:6}}>รุ่น</label>
+                {isEditing ? (
+                  <input
+                    style={{background:'white',border:'1px solid #e9ecef',borderRadius:8,padding:'10px 12px',fontSize:14,width:'100%',outline:'none',transition:'all 0.2s'}}
+                    value={editForm.model}
+                    onChange={e=>setField('model',e.target.value)}
+                    placeholder="กรอกรุ่น"
+                  />
+                ) : (
+                  <div style={{fontSize:16,fontWeight:500,color:'#2c3e50'}}>{item.model || '-'}</div>
+                )}
+              </div>
+              <div>
+                <label style={{fontSize:12,color:'#6c757d',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,display:'block',marginBottom:6}}>หมายเลขเครื่อง</label>
+                {isEditing ? (
+                  <input
+                    style={{background:'white',border:'1px solid #e9ecef',borderRadius:8,padding:'10px 12px',fontSize:14,width:'100%',outline:'none',transition:'all 0.2s'}}
+                    value={editForm.serial}
+                    onChange={e=>setField('serial',e.target.value)}
+                    placeholder="กรอก Serial Number"
+                  />
+                ) : (
+                  <div style={{fontSize:16,fontWeight:500,color:'#2c3e50',fontFamily:'var(--mono)'}}>{item.serial || '-'}</div>
+                )}
+              </div>
+              <div>
+                <label style={{fontSize:12,color:'#6c757d',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,display:'block',marginBottom:6}}>สถานะ</label>
+                <div style={{fontSize:16,fontWeight:500,color:'#28a745'}}>พร้อมใช้งาน</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div style={{marginBottom:24}}>
+            <h2 style={{fontSize:18,fontWeight:600,color:'#2c3e50',margin:'0 0 16px 0',display:'flex',alignItems:'center',gap:8}}>
+              <FileText size={20} />
+              รายละเอียดเพิ่มเติม
+            </h2>
+            {isEditing ? (
+              <textarea
+                style={{background:'white',border:'1px solid #e9ecef',borderRadius:8,padding:'12px',fontSize:14,width:'100%',minHeight:120,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.6}}
+                value={editForm.description}
+                onChange={e=>setField('description',e.target.value)}
+                placeholder="เพิ่มรายละเอียดเกี่ยวกับอุปกรณ์..."
+              />
+            ) : (
+              <div style={{fontSize:15,color:'#495057',lineHeight:1.6,background:'#f8f9fa',padding:'16px',borderRadius:8}}>
+                {item.description || 'ไม่มีรายละเอียดเพิ่มเติม'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .spin{animation:spin 1s linear infinite}
+        input:focus, textarea:focus, select:focus{
+          border-color: #667eea !important;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+        }
+        button:hover{
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+      `}</style>
     </div>
   )
 }
@@ -196,13 +732,12 @@ function TableView({items, selected, onRowClick, onEdit, onDelete}) {
     <div style={{overflowX:'auto',animation:'fadein .3s ease',maxWidth:1400,width:'100%'}}>
       <table style={{width:'100%',borderCollapse:'separate',borderSpacing:'0 3px'}}>
         <thead>
-          <tr>{['ID','อุปกรณ์','หมวดหมู่','Serial','จำนวน','ขั้นต่ำ','ที่เก็บ','Actions'].map(h=>{
+          <tr>{['ID','อุปกรณ์','หมวดหมู่','Serial','จำนวน','ขั้นต่ำ','ที่เก็บ'].map(h=>{
             if (h === 'ID') return <th key={h} style={{...thSt,width:'80px',padding:'8px 10px'}}>{h}</th>
             if (h === 'หมวดหมู่') return <th key={h} style={{...thSt,width:'120px',padding:'8px 10px'}}>{h}</th>
             if (h === 'Serial') return <th key={h} style={{...thSt,width:'180px',padding:'8px 10px'}}>{h}</th>
             if (h === 'จำนวน' || h === 'ขั้นต่ำ') return <th key={h} style={{...thSt,width:'60px',textAlign:'center',padding:'8px 10px'}}>{h}</th>
             if (h === 'ที่เก็บ') return <th key={h} style={{...thSt,width:'80px',padding:'8px 10px'}}>{h}</th>
-            if (h === 'Actions') return <th key={h} style={{...thSt,width:'70px',textAlign:'center',padding:'8px 10px'}}>{h}</th>
             return <th key={h} style={{...thSt,padding:'8px 10px'}}>{h}</th>
           })}</tr>
         </thead>
@@ -236,12 +771,6 @@ function TableView({items, selected, onRowClick, onEdit, onDelete}) {
                   <span style={{fontSize:11,color:item.location?'var(--text3)':'#94a3b8',fontStyle:item.location?'normal':'italic'}}>
                     {item.location || 'ไม่ระบุ'}
                   </span>
-                </td>
-                <td style={{...tdSt,padding:'6px 8px',borderTopRightRadius:6,borderBottomRightRadius:6,textAlign:'center'}} onClick={e=>e.stopPropagation()}>
-                  <div style={{display:'flex',gap:4,justifyContent:'center'}}>
-                    <IBtn title="แก้ไข" color="var(--accent)" onClick={()=>onEdit(item)}><Edit size={12} /></IBtn>
-                    <IBtn title="ลบ" color="var(--danger)" onClick={()=>onDelete(item)}><Trash size={12} /></IBtn>
-                  </div>
                 </td>
               </tr>
             )
@@ -326,7 +855,7 @@ const toolbar={display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWra
 const searchWrap={display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.95)',border:'1px solid var(--border2)',borderRadius:9,padding:'0 12px',flex:'1 1 220px',minWidth:200}
 const searchIn={background:'none',border:'none',color:'var(--text)',fontSize:13,padding:'10px 0',outline:'none',flex:1,fontFamily:'var(--sans)'}
 const clearX={background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:12}
-const addBtn={background:'var(--accent)',color:'#000',border:'none',borderRadius:8,padding:'10px 18px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'var(--sans)',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:6}
+const addBtn={background:'var(--accent)',color:'#ffffff',border:'none',borderRadius:8,padding:'10px 18px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'var(--sans)',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:6}
 const alertBar={background:'rgba(255,184,0,.1)',border:'1px solid rgba(255,184,0,.3)',color:'var(--warning)',borderRadius:9,padding:'10px 16px',fontSize:13,marginBottom:16,maxWidth:1400,width:'100%'}
 const centerBox={display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:280,gap:12}
 const spinner={width:34,height:34,border:'3px solid var(--border)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin .8s linear infinite'}

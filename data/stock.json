@@ -12,12 +12,12 @@
     "status": "active",
     "description": "MacBook Pro 14 นิ้ว ชิป M3, RAM 8GB, SSD 512GB",
     "createdAt": "2024-01-15T08:00:00.000Z",
-    "updatedAt": "2026-04-22T09:48:14.880Z",
-    "image": "/images/1776763138903-fbc5801958cf6876737814e5f8998f90.jpg"
+    "updatedAt": "2026-04-27T04:52:32.442Z",
+    "image": "/images/IT-001-fbc5801958cf6876737814e5f8998f90.webp"
   },
   {
     "id": "IT-002",
-    "name": "Dell Monitor 27\" 4K",
+    "name": "Dell Monitor 27\" 4K K จ้า",
     "category": "Monitor",
     "brand": "Dell",
     "model": "U2723D",
@@ -28,28 +28,12 @@
     "status": "active",
     "description": "จอมอนิเตอร์ 27 นิ้ว 4K IPS, USB-C Hub",
     "createdAt": "2024-01-16T09:00:00.000Z",
-    "updatedAt": "2026-04-21T09:19:44.894Z",
-    "image": "/images/1776763183984-8778f4d51989e04598a6da4b3de170d3.jpg"
+    "updatedAt": "2026-04-27T06:23:27.290Z",
+    "image": "/images/IT-002-6e42d2c08ee3437b2ab68ae408f8c6a0.webp"
   },
   {
     "id": "IT-003",
-    "name": "Logitech MX Master 3S",
-    "category": "Peripheral",
-    "brand": "Logitech",
-    "model": "MX-M3S",
-    "serial": "2243-ABCD-5678",
-    "quantity": 8,
-    "minQuantity": 5,
-    "location": "ชั้น A-1",
-    "status": "active",
-    "description": "เมาส์ Wireless Bluetooth, 8000 DPI",
-    "createdAt": "2024-01-17T10:00:00.000Z",
-    "updatedAt": "2026-04-21T09:16:01.311Z",
-    "image": "/images/1776762960366-6e42d2c08ee3437b2ab68ae408f8c6a0.jpg"
-  },
-  {
-    "id": "IT-006",
-    "name": "HP EliteBook 840 G10",
+    "name": "HP EliteBook 840 G101234",
     "category": "Laptop",
     "brand": "HP",
     "model": "840G10",
@@ -59,13 +43,29 @@
     "location": "ชั้น A-2",
     "status": "active",
     "description": "HP EliteBook 14นิ้ว Intel i7, RAM 16GB, SSD 512GB",
-    "createdAt": "2024-02-01T08:00:00.000Z",
-    "updatedAt": "2026-04-21T09:20:38.518Z",
+    "createdAt": "2024-01-17T10:00:00.000Z",
+    "updatedAt": "2026-04-27T04:05:03.064Z",
     "image": "/images/1776762968616-1b5d0308ed47e3d5f0b7c73a71b6cd12.jpg"
   },
   {
+    "id": "IT-006",
+    "name": "Dell PowerEdge R750 2222",
+    "category": "Server",
+    "brand": "Dell",
+    "model": "R750",
+    "serial": "CN0123456789",
+    "quantity": 4,
+    "minQuantity": 1,
+    "location": "ชั้น B-2",
+    "status": "active",
+    "description": "Rack Server Intel Xeon, RAM 64GB",
+    "createdAt": "2024-02-01T08:00:00.000Z",
+    "updatedAt": "2026-04-27T04:10:01.672Z",
+    "image": "/images/1776763901171-a8616c093b0d12267f9180adaeb5b881.jpg"
+  },
+  {
     "id": "IT-007",
-    "name": "Samsung Monitor 32\" Curved",
+    "name": "Samsung Monitor 32\" Curved 1111",
     "category": "Monitor",
     "brand": "Samsung",
     "model": "C32G55T",
@@ -76,7 +76,7 @@
     "status": "active",
     "description": "จอมอนิเตอร์ 32 นิ้ว Curved 165Hz",
     "createdAt": "2024-02-05T09:00:00.000Z",
-    "updatedAt": "2026-04-21T09:21:24.644Z",
+    "updatedAt": "2026-04-27T04:16:56.278Z",
     "image": "/images/1776763283635-42415fb07b492a570ad2cbddd544531d.jpg"
   },
   {
@@ -97,19 +97,19 @@
   },
   {
     "id": "IT-009",
-    "name": "Cisco Catalyst Switch",
-    "category": "Network",
-    "brand": "Cisco",
-    "model": "C9200-48P",
-    "serial": "FOC12345678",
-    "quantity": 2,
-    "minQuantity": 1,
+    "name": "Keychron K2 Keyboard AAAAA",
+    "category": "Peripheral",
+    "brand": "Keychron",
+    "model": "K2",
+    "serial": "KC2-123456",
+    "quantity": 15,
+    "minQuantity": 5,
     "location": "ชั้น B-1",
     "status": "active",
-    "description": "Network Switch 48 Port PoE+",
+    "description": "Mechanical Keyboard 75% Bluetooth",
     "createdAt": "2024-02-15T08:00:00.000Z",
-    "updatedAt": "2026-04-21T09:22:58.441Z",
-    "image": "/images/1776763377324-edd5a6bb15adb07cf168ab075c284090.jpg"
+    "updatedAt": "2026-04-27T04:08:04.970Z",
+    "image": "/images/1776763426365-36c9f4f6b231875a0af1e8ffedc63312.jpg"
   },
   {
     "id": "IT-010",
@@ -185,21 +185,6 @@
     "status": "active",
     "description": "ThinkPad X1 Carbon Gen 9 Intel i7",
     "createdAt": "2024-03-20T08:00:00.000Z",
-    "updatedAt": "2026-04-21T07:00:00.000Z"
-  },
-  {
-    "id": "IT-015",
-    "name": "ASUS ROG Monitor 27\"",
-    "category": "Monitor",
-    "brand": "ASUS",
-    "model": "VG27AQ",
-    "serial": "AS123456789",
-    "quantity": 8,
-    "minQuantity": 3,
-    "location": "ชั้น C-2",
-    "status": "active",
-    "description": "Gaming Monitor 27นิ้ว 165Hz IPS",
-    "createdAt": "2024-03-25T09:00:00.000Z",
     "updatedAt": "2026-04-21T07:00:00.000Z"
   },
   {
