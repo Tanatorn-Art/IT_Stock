@@ -3,8 +3,8 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import ShelfMap from '../components/Shelfmap'
-import Shelfmap_metal from '../components/Shelfmap_metal'
-import { Package, MapPin, Scan, Settings, Loader2, Save, Plus } from 'lucide-react'
+import ShelfConfigEditor from '../components/ShelfConfigEditor'
+import { Package, MapPin, Scan, Settings, Loader2, Save, Plus, Sliders } from 'lucide-react'
 
 export default function LocationPage() {
   const router = useRouter()
@@ -16,8 +16,10 @@ export default function LocationPage() {
   const [viewItem, setViewItem] = useState(null)
   const [toast, setToast] = useState(null)
   const [selectedLocation, setSelectedLocation] = useState(null)
-  const [selectedFromShelf, setSelectedFromShelf] = useState(null) // 'shelfmap' | 'metal' | null
+  const [selectedShelfId, setSelectedShelfId] = useState(null)
   const [pageLoaded, setPageLoaded] = useState(false)
+  const [shelfConfig, setShelfConfig] = useState(null)
+  const [showConfigEditor, setShowConfigEditor] = useState(false)
   const toastTimer = useRef(null)
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -43,8 +45,18 @@ export default function LocationPage() {
     }
   }, [])
 
+  const fetchShelfConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/shelf-config')
+      setShelfConfig(await res.json())
+    } catch (err) {
+      console.error('Failed to fetch shelf config:', err)
+    }
+  }, [])
+
   useEffect(() => { fetchLocations() }, [fetchLocations])
   useEffect(() => { fetchStock() }, [fetchStock])
+  useEffect(() => { fetchShelfConfig() }, [fetchShelfConfig])
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   // Trigger slide up animation after initial load
@@ -57,17 +69,23 @@ export default function LocationPage() {
 
   // Handle query param to pre-select location
   useEffect(() => {
-    if (!loading && locations.length > 0 && router.query.loc) {
+    if (!loading && locations.length > 0 && shelfConfig && router.query.loc) {
       const locName = decodeURIComponent(router.query.loc)
       const foundLoc = locations.find(l => l.name === locName)
       if (foundLoc) {
-        // Determine which shelf to select from based on location name pattern
-        const isMetalShelf = /^E-?\d/.test(locName) || locName.includes('E')
+        // Use location.shelfId if available, otherwise match by regex
+        let shelfId = foundLoc.shelfId
+        if (!shelfId) {
+          const matchedShelf = shelfConfig.shelves.find(s => {
+            try { return new RegExp(s.nameMatchPattern, s.nameMatchFlags).test(locName) } catch { return false }
+          })
+          shelfId = matchedShelf?.id || shelfConfig.shelves[0]?.id || null
+        }
         setSelectedLocation(foundLoc)
-        setSelectedFromShelf(isMetalShelf ? 'metal' : 'shelfmap')
+        setSelectedShelfId(shelfId)
       }
     }
-  }, [loading, locations, router.query.loc])
+  }, [loading, locations, shelfConfig, router.query.loc])
 
   // Get highlighted item ID from query
   const highlightedItemId = router.query.item ? decodeURIComponent(router.query.item) : null
@@ -85,31 +103,44 @@ export default function LocationPage() {
     showToast(`ลบ ${item.id} เรียบร้อย`, 'danger')
   }, [fetchLocations, showToast])
 
-  const handleShelfmapSelect = useCallback((loc) => {
-    // Toggle: if clicking the same location, deselect it
+  const handleShelfSelect = useCallback((shelfId, loc) => {
     setSelectedLocation(prev => {
       const isSame = prev?.id === loc?.id
       if (isSame) {
-        setSelectedFromShelf(null)
+        setSelectedShelfId(null)
         return null
       }
-      setSelectedFromShelf('shelfmap')
+      setSelectedShelfId(shelfId)
       return loc
     })
   }, [])
 
-  const handleMetalSelect = useCallback((loc) => {
-    // Toggle: if clicking the same location, deselect it
-    setSelectedLocation(prev => {
-      const isSame = prev?.id === loc?.id
-      if (isSame) {
-        setSelectedFromShelf(null)
-        return null
-      }
-      setSelectedFromShelf('metal')
-      return loc
-    })
-  }, [])
+  const handleSaveConfig = useCallback(async (newConfig) => {
+    try {
+      const res = await fetch('/api/shelf-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig),
+      })
+      if (!res.ok) throw new Error()
+      const saved = await res.json()
+      setShelfConfig(saved)
+      setShowConfigEditor(false)
+      showToast('บันทึกตั้งค่าชั้นสำเร็จ')
+    } catch {
+      showToast('เกิดข้อผิดพลาดในการบันทึก', 'danger')
+    }
+  }, [showToast])
+
+  const handleGenerateLocations = useCallback(async () => {
+    try {
+      const res = await fetch('/api/locations/generate', { method: 'POST' })
+      const result = await res.json()
+      if (!res.ok) throw new Error()
+      fetchLocations()
+      showToast(`สร้างตำแหน่ง ${result.added} ตำแหน่งใหม่แล้ว`)
+    } catch { alert('เกิดข้อผิดพลาดในการสร้างตำแหน่ง') }
+  }, [fetchLocations, showToast])
 
   // Get stock items for selected location
   const locationStockItems = selectedLocation
@@ -162,25 +193,54 @@ export default function LocationPage() {
               padding: '10px',
               marginTop: '-20px'
             }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>จัดการตำแหน่งเก็บของ</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>จัดการตำแหน่งเก็บของ</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={handleGenerateLocations}
+                    title="สร้างตำแหน่งที่ขาดหาย"
+                    style={{
+                      background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text2)',
+                      borderRadius: 6, width: 30, height: 30, cursor: 'pointer', fontSize: 13,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Plus size={15} />
+                  </button>
+                  <button
+                    onClick={() => setShowConfigEditor(true)}
+                    title="ตั้งค่าชั้นวาง"
+                    style={{
+                      background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text2)',
+                      borderRadius: 6, width: 30, height: 30, cursor: 'pointer', fontSize: 13,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Sliders size={15} />
+                  </button>
+                </div>
+              </div>
               <div className={`panels-wrapper ${pageLoaded ? 'slide-up' : ''}`}>
-                {/* Left Panel - Shelfmap (hidden when metal is clicked) */}
-                <div className={`panel-left ${selectedFromShelf === 'metal' ? 'slide-out-left' : 'slide-in-left'}`}>
-                  <ShelfMap
-                    locations={locations}
-                    selectedLocation={selectedLocation}
-                    onLocationSelect={handleShelfmapSelect}
-                  />
-                </div>
-
-                {/* Middle Panel - Shelfmap_metal (moves left when clicked) */}
-                <div className={`panel-middle ${selectedFromShelf === 'metal' ? 'slide-to-left' : selectedFromShelf === 'shelfmap' ? 'slide-out-right' : 'slide-to-center'}`}>
-                  <Shelfmap_metal
-                    locations={locations}
-                    selectedLocation={selectedLocation}
-                    onLocationSelect={handleMetalSelect}
-                  />
-                </div>
+                {/* Dynamic shelf panels */}
+                {shelfConfig?.shelves?.map((shelf, idx) => {
+                  const isSelected = selectedShelfId === shelf.id
+                  const isHidden = selectedShelfId && selectedShelfId !== shelf.id
+                  return (
+                    <div
+                      key={shelf.id}
+                      className={`shelf-panel ${isSelected ? 'shelf-selected' : isHidden ? 'shelf-hidden' : 'shelf-default'}`}
+                      style={{ order: idx + 1 }}
+                    >
+                      <ShelfMap
+                        shelfId={shelf.id}
+                        config={shelfConfig}
+                        locations={locations}
+                        selectedLocation={selectedLocation}
+                        onLocationSelect={(loc) => handleShelfSelect(shelf.id, loc)}
+                      />
+                    </div>
+                  )
+                })}
 
                 {/* Right Panel - Stock Cards */}
                 <div className={`panel-right ${selectedLocation ? 'slide-in-right' : 'slide-out-right'}`}>
@@ -188,7 +248,7 @@ export default function LocationPage() {
                     <LocationStockCards
                       location={selectedLocation}
                       stockItems={locationStockItems}
-                      onClose={selectedFromShelf === 'shelfmap' ? handleShelfmapSelect : handleMetalSelect}
+                      onClose={() => handleShelfSelect(selectedShelfId, selectedLocation)}
                       highlightedItemId={highlightedItemId}
                     />
                   )}
@@ -201,13 +261,20 @@ export default function LocationPage() {
 
       {/* Modals — rendered via portal-like pattern, only when needed */}
       {formItem !== undefined && (
-        <LocationForm location={formItem} onSave={handleSave} onClose={() => setFormItem(undefined)} />
+        <LocationForm location={formItem} shelfConfig={shelfConfig} onSave={handleSave} onClose={() => setFormItem(undefined)} />
       )}
       {delItem && (
         <DelModal item={delItem} onConfirm={() => handleDelete(delItem)} onClose={() => setDelItem(null)} />
       )}
       {viewItem && (
         <ViewModal location={viewItem} onClose={() => setViewItem(null)} />
+      )}
+      {showConfigEditor && shelfConfig && (
+        <ShelfConfigEditor
+          config={shelfConfig}
+          onSave={handleSaveConfig}
+          onClose={() => setShowConfigEditor(false)}
+        />
       )}
       {toast && (
         <div style={toastSt(toast.type)}>{toast.type === 'success' ? '✅' : '🗑️'} {toast.msg}</div>
@@ -223,22 +290,16 @@ export default function LocationPage() {
         .panels-wrapper{display:flex;flex-direction:row;justify-content:center;width:100%;gap:20px;position:relative;overflow:hidden;opacity:0;transform:translateY(20px)}
         .panels-wrapper.slide-up{opacity:1;transform:translateY(0);transition:opacity .5s ease,transform .5s cubic-bezier(0.4,0,0.2,1)}
         /* Panel transitions */
-        .panel-left,.panel-middle,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
-        /* Default states */
-        .panel-left{order:1;flex:1;opacity:1;transform:translateX(0)}
-        .panel-middle{order:2;flex:1;opacity:1;transform:translateX(0)}
-        .panel-right{order:3;flex:0;width:0;opacity:0;transform:translateX(100%);overflow:hidden}
-        /* When metal is clicked: shelfmap slides out left, metal moves to left, cards appear */
-        .panel-left.slide-out-left{opacity:0;transform:translateX(-100%);flex:0;width:0;overflow:hidden}
-        .panel-middle.slide-to-left{order:1}
-        /* When shelfmap is clicked: metal slides out right, cards appear on right */
-        .panel-middle.slide-out-right{opacity:0;transform:translateX(100%);flex:0;width:0;overflow:hidden}
-        /* Stock cards always slide in from right when selectedLocation exists */
+        .shelf-panel,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
+        /* Default shelf state */
+        .shelf-default{flex:1;opacity:1;transform:translateX(0)}
+        /* Selected shelf expands, others hide */
+        .shelf-selected{flex:1;opacity:1;transform:translateX(0)}
+        .shelf-hidden{flex:0;width:0;opacity:0;overflow:hidden;padding:0;margin:0}
+        /* Stock cards panel */
+        .panel-right{order:99;flex:0;width:0;opacity:0;transform:translateX(100%);overflow:hidden}
         .panel-right.slide-in-right{opacity:1;transform:translateX(0);flex:1;width:auto;overflow:visible}
         .panel-right.slide-out-right{opacity:0;transform:translateX(100%);flex:0;width:0;overflow:hidden}
-        /* Reset states */
-        .panel-left.slide-in-left{opacity:1;transform:translateX(0);flex:1}
-        .panel-middle.slide-to-center{order:2;opacity:1;transform:translateX(0);flex:1}
         input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -573,10 +634,11 @@ function statusColor(s) {
   return { done: 'var(--success)', error: 'var(--danger)', reading: 'var(--accent)', uploading: 'var(--accent)', pending: 'var(--text3)' }[s] ?? 'var(--text3)'
 }
 
-function LocationForm({ location, onSave, onClose }) {
+function LocationForm({ location, shelfConfig, onSave, onClose }) {
   const isEdit = !!location
   const [name, setName] = useState(location?.name || '')
   const [description, setDescription] = useState(location?.description || '')
+  const [shelfId, setShelfId] = useState(location?.shelfId || null)
   const [saving, setSaving] = useState(false)
   const [nameErr, setNameErr] = useState('')
 
@@ -589,7 +651,7 @@ function LocationForm({ location, onSave, onClose }) {
       const res = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ name, description, shelfId }),
       })
       if (!res.ok) throw new Error()
       onSave(await res.json())
@@ -612,6 +674,23 @@ function LocationForm({ location, onSave, onClose }) {
           <div style={{ gridColumn: '1/-1' }}>
             <F label="ชื่อตำแหน่ง *" err={nameErr}>
               <input style={I(nameErr)} value={name} onChange={e => { setName(e.target.value); if (nameErr) setNameErr('') }} placeholder="เช่น ชั้น A-1" />
+            </F>
+          </div>
+
+          <div style={{ gridColumn: '1/-1' }}>
+            <F label="ชั้นวาง (Shelf)">
+              <select
+                style={I()}
+                value={shelfId || ''}
+                onChange={e => setShelfId(e.target.value || null)}
+              >
+                <option value="">-- อัตโนมัติจากชื่อ --</option>
+                {shelfConfig?.shelves?.map(shelf => (
+                  <option key={shelf.id} value={shelf.id}>
+                    {shelf.name || shelf.id} ({shelf.cols.join(', ')} × {shelf.rows.length})
+                  </option>
+                ))}
+              </select>
             </F>
           </div>
 
@@ -776,7 +855,7 @@ const navbarNav = { display: 'flex', alignItems: 'center', gap: 4 }
 const navbarRight = { display: 'flex', alignItems: 'center', gap: 12 }
 const logoBox = { width: 34, height: 34, background: 'var(--accent)', color: '#000', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 12, letterSpacing: 1 }
 const navItem = (a) => ({ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, fontSize: 13, color: '#ffffff', background: a ? 'var(--accent-glow)' : 'transparent', border: a ? '1px solid rgba(0,212,255,.2)' : '1px solid transparent', fontWeight: a ? 600 : 400, transition: 'all .15s', cursor: 'pointer' })
-const mainArea = { flex: 1, padding: 24, minWidth: 0, overflowX: 'hidden' }
+const mainArea = { flex: 1, padding: 24, minWidth: 0, overflowX: 'hidden'}
 const toolbar = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-5px' }
 const addBtn = { background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--sans)', whiteSpace: 'nowrap' }
 const centerBox = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, gap: 12 }

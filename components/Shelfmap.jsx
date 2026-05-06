@@ -1,27 +1,17 @@
-import { useState, useEffect, useCallback } from 'react'
-import LocationStockModal from './LocationStockModal'
-
-const COLS = ['A', 'B', 'C', 'D']
-const ROWS = [4, 3, 2, 1]
-
-const BEAM_COLOR = '#F59E0B'
-const UPRIGHT_COLOR = '#3B82F6'
-const FILLED_COLOR = '#10B981'
-const EMPTY_COLOR = '#E2E8F0'
-const SELECTED_COLOR = '#1E40AF'
+import { useCallback } from 'react'
 
 function locKey(col, row) {
   return `${col}-${row}`
 }
 
-function buildMap(locations) {
+function buildMap(locations, nameMatch) {
   const map = {}
   locations.forEach(loc => {
     let col = loc.col
     let row = loc.row
 
     if (!col || !row) {
-      const match = (loc.name || '').match(/([A-D])[^0-9]*([1-4])/)
+      const match = (loc.name || '').match(nameMatch)
       if (match) {
         col = match[1]
         row = parseInt(match[2])
@@ -35,14 +25,24 @@ function buildMap(locations) {
   return map
 }
 
-function ShelfSVG({ locationMap, selected, onSelect }) {
-  const COL_W = 90
-  const ROW_H = 65
-  const BEAM_H = 6
-  const UPRIGHT_W = 6
-  const PAD = 4
-  const X0 = 35
-  const Y0 = 10
+function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
+  const COLS = shelf.cols
+  const ROWS = shelf.rows
+  const COL_W = shelf.colW
+  const ROW_H = defaults.rowH
+  const BEAM_H = defaults.beamH
+  const UPRIGHT_W = defaults.uprightW
+  const PAD = defaults.pad
+  const X0 = defaults.x0
+  const Y0 = defaults.y0
+
+  const BEAM_COLOR = defaults.beamColor
+  const UPRIGHT_COLOR = defaults.uprightColor
+  const FILLED_COLOR = defaults.filledColor
+  const EMPTY_COLOR = defaults.emptyColor
+  const SELECTED_COLOR = defaults.selectedColor
+
+  const NAME_REPLACE = new RegExp(defaults.nameReplacePattern, defaults.nameReplaceFlags)
 
   const totalW = X0 + COLS.length * COL_W + UPRIGHT_W + 4
   const totalH = Y0 + ROWS.length * (ROW_H + BEAM_H) + BEAM_H + 8
@@ -102,7 +102,7 @@ function ShelfSVG({ locationMap, selected, onSelect }) {
                         x={cellX + cellW / 2} y={cellY + cellH / 2 - 9}
                         textAnchor="middle" dominantBaseline="central"
                         fontSize={12} fontWeight={600}
-                        fill={isSel ? '#FFFFFF' : '#FFFFFF'}
+                        fill={isSel ? shelf.labelTextFill[0] : shelf.labelTextFill[1]}
                         fontFamily="var(--mono, monospace)"
                       >
                         {col}-{row}
@@ -111,10 +111,10 @@ function ShelfSVG({ locationMap, selected, onSelect }) {
                         x={cellX + cellW / 2} y={cellY + cellH / 2 + 9}
                         textAnchor="middle" dominantBaseline="central"
                         fontSize={10}
-                        fill={isSel ? '#DBEAFE' : '#D1FAE5'}
+                        fill={isSel ? shelf.detailTextFill[0] : shelf.detailTextFill[1]}
                       >
                         {(() => {
-                          const short = (loc.name || '').replace(/ชั้น\s+[A-D]-\d+\s*/i, '').trim() || loc.name || ''
+                          const short = (loc.name || '').replace(NAME_REPLACE, '').trim() || loc.name || ''
                           return short.length > 11 ? short.slice(0, 10) + '…' : short
                         })()}
                       </text>
@@ -161,71 +161,30 @@ function ShelfSVG({ locationMap, selected, onSelect }) {
   )
 }
 
-function DetailPanel({ loc, onClose }) {
-  if (!loc) return null
-  return (
-    <div style={{
-      marginTop: 14,
-      background: 'var(--surface, #f8fafc)',
-      border: '1px solid var(--border, #cbd5e1)',
-      borderRadius: 12,
-      padding: '14px 16px',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 14,
-      animation: 'fadein .2s ease',
-    }}>
-      <div style={{
-        width: 42, height: 42, borderRadius: 8, flexShrink: 0,
-        background: 'rgba(59, 130, 246, 0.1)',
-        border: '1px solid rgba(59, 130, 246, 0.2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18,
-      }}>
-        📍
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10, color: 'var(--text3, #666)', fontFamily: 'var(--mono)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 }}>
-          {loc.id}
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-          {loc.name}
-        </div>
-        {loc.description
-          ? <div style={{ fontSize: 13, color: 'var(--text2, #475569)' }}>{loc.description}</div>
-          : <div style={{ fontSize: 13, color: 'var(--text3, #666)', fontStyle: 'italic' }}>ไม่มีรายละเอียด</div>
-        }
-      </div>
-      <button
-        onClick={onClose}
-        style={{
-          background: 'transparent', border: '1px solid var(--border2, #94a3b8)',
-          color: 'var(--text2, #475569)', borderRadius: 6, width: 26, height: 26,
-          cursor: 'pointer', fontSize: 11, flexShrink: 0,
-        }}
-      >
-        ✕
-      </button>
-    </div>
-  )
-}
+export default function ShelfMap({ shelfId, config, locations = [], selectedLocation, onLocationSelect }) {
+  const shelf = config?.shelves?.find(s => s.id === shelfId)
+  const defaults = config?.defaults
 
-export default function ShelfMap({ locations = [], selectedLocation, onLocationSelect }) {
-  const locationMap = buildMap(locations)
+  if (!shelf || !defaults) {
+    return <div style={{ color: 'var(--text3)', fontSize: 12, padding: 20 }}>ไม่พบการตั้งค่าชั้น &quot;{shelfId}&quot;</div>
+  }
+
+  const nameMatch = new RegExp(shelf.nameMatchPattern, shelf.nameMatchFlags)
+  const locationMap = buildMap(locations, nameMatch)
 
   const handleSelect = useCallback((key, loc) => {
     onLocationSelect?.(loc)
   }, [onLocationSelect])
 
   const filledCount = Object.keys(locationMap).length
-  const totalSlots = COLS.length * ROWS.length
+  const totalSlots = shelf.cols.length * shelf.rows.length
 
   const getSelectedKey = () => {
     if (!selectedLocation) return null
     let col = selectedLocation.col
     let row = selectedLocation.row
     if (!col || !row) {
-      const match = (selectedLocation.name || '').match(/([A-D])[^0-9]*([1-4])/)
+      const match = (selectedLocation.name || '').match(nameMatch)
       if (match) {
         col = match[1]
         row = parseInt(match[2])
@@ -238,22 +197,22 @@ export default function ShelfMap({ locations = [], selectedLocation, onLocationS
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}></div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{shelf.name || shelf.id}</div>
         <div style={{ display: 'flex', gap: 16 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text3)' }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: FILLED_COLOR, display: 'inline-block' }} />
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: defaults.filledColor, display: 'inline-block' }} />
             มี location ({filledCount})
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text3)' }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: EMPTY_COLOR, opacity: .5, display: 'inline-block' }} />
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: defaults.emptyColor, opacity: .5, display: 'inline-block' }} />
             ว่าง ({totalSlots - filledCount})
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '28px repeat(4, 1fr)', gap: 0, marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `28px repeat(${shelf.cols.length}, 1fr)`, gap: 0, marginBottom: 4 }}>
         <div />
-        {COLS.map(c => (
+        {shelf.cols.map(c => (
           <div key={c} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
             {c}
           </div>
@@ -261,6 +220,8 @@ export default function ShelfMap({ locations = [], selectedLocation, onLocationS
       </div>
 
       <ShelfSVG
+        shelf={shelf}
+        defaults={defaults}
         locationMap={locationMap}
         selected={selectedKey}
         onSelect={handleSelect}

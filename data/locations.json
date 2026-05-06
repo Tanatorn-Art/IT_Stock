@@ -130,5 +130,253 @@
     "name": "ชั้น E-6",
     "description": "ชั้น E ด้านที่ 6",
     "status": "active"
+  },
+  {
+    "id": "LOC-023",
+    "name": "A-4",
+    "description": "ชั้น A ด้านที่ 4",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-024",
+    "name": "A-3",
+    "description": "ชั้น A ด้านที่ 3",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-025",
+    "name": "A-2",
+    "description": "ชั้น A ด้านที่ 2",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-026",
+    "name": "A-1",
+    "description": "ชั้น A ด้านที่ 1",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-027",
+    "name": "B-4",
+    "description": "ชั้น B ด้านที่ 4",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-028",
+    "name": "B-3",
+    "description": "ชั้น B ด้านที่ 3",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-029",
+    "name": "B-2",
+    "description": "ชั้น B ด้านที่ 2",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-030",
+    "name": "B-1",
+    "description": "ชั้น B ด้านที่ 1",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-031",
+    "name": "C-4",
+    "description": "ชั้น C ด้านที่ 4",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-032",
+    "name": "C-3",
+    "description": "ชั้น C ด้านที่ 3",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-033",
+    "name": "C-2",
+    "description": "ชั้น C ด้านที่ 2",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-034",
+    "name": "C-1",
+    "description": "ชั้น C ด้านที่ 1",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-035",
+    "name": "D-4",
+    "description": "ชั้น D ด้านที่ 4",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.490Z"
+  },
+  {
+    "id": "LOC-036",
+    "name": "D-3",
+    "description": "ชั้น D ด้านที่ 3",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-037",
+    "name": "D-2",
+    "description": "ชั้น D ด้านที่ 2",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-038",
+    "name": "D-1",
+    "description": "ชั้น D ด้านที่ 1",
+    "shelfId": "default",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-039",
+    "name": "E-6",
+    "description": "ชั้น E ด้านที่ 6",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-040",
+    "name": "E-5",
+    "description": "ชั้น E ด้านที่ 5",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-041",
+    "name": "E-4",
+    "description": "ชั้น E ด้านที่ 4",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-042",
+    "name": "E-3",
+    "description": "ชั้น E ด้านที่ 3",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-043",
+    "name": "E-2",
+    "description": "ชั้น E ด้านที่ 2",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-044",
+    "name": "E-1",
+    "description": "ชั้น E ด้านที่ 1",
+    "shelfId": "metal",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-045",
+    "name": "F-3",
+    "description": "ชั้น F ด้านที่ 3",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-046",
+    "name": "F-2",
+    "description": "ชั้น F ด้านที่ 2",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-047",
+    "name": "F-1",
+    "description": "ชั้น F ด้านที่ 1",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-048",
+    "name": "G-3",
+    "description": "ชั้น G ด้านที่ 3",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-049",
+    "name": "G-2",
+    "description": "ชั้น G ด้านที่ 2",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-050",
+    "name": "G-1",
+    "description": "ชั้น G ด้านที่ 1",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-051",
+    "name": "H-3",
+    "description": "ชั้น H ด้านที่ 3",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-052",
+    "name": "H-2",
+    "description": "ชั้น H ด้านที่ 2",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
+  },
+  {
+    "id": "LOC-053",
+    "name": "H-1",
+    "description": "ชั้น H ด้านที่ 1",
+    "shelfId": "shelf-1",
+    "status": "empty",
+    "createdAt": "2026-04-28T08:01:12.491Z"
   }
 ]

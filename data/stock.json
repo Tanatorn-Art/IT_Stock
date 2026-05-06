@@ -8,12 +8,12 @@
     "serial": "C02ZW1ABMD6T",
     "quantity": 9,
     "minQuantity": 2,
-    "location": "ชั้น A-1",
+    "location": "A-1",
     "status": "active",
     "description": "MacBook Pro 14 นิ้ว ชิป M3, RAM 8GB, SSD 512GB",
     "createdAt": "2024-01-15T08:00:00.000Z",
-    "updatedAt": "2026-04-27T04:52:32.442Z",
-    "image": "/images/IT-001-fbc5801958cf6876737814e5f8998f90.webp"
+    "updatedAt": "2026-04-30T04:20:49.350Z",
+    "image": "/images/IT-001-fbc5801958cf6876737814e5f8998f90.webp?_refresh=1777522832480"
   },
   {
     "id": "IT-002",
@@ -24,12 +24,12 @@
     "serial": "CN-0ABCDE-12345",
     "quantity": 12,
     "minQuantity": 3,
-    "location": "ชั้น A-1",
+    "location": "G-3",
     "status": "active",
     "description": "จอมอนิเตอร์ 27 นิ้ว 4K IPS, USB-C Hub",
     "createdAt": "2024-01-16T09:00:00.000Z",
-    "updatedAt": "2026-04-27T06:23:27.290Z",
-    "image": "/images/IT-002-6e42d2c08ee3437b2ab68ae408f8c6a0.webp"
+    "updatedAt": "2026-04-28T08:01:44.909Z",
+    "image": "/images/IT-002-6e42d2c08ee3437b2ab68ae408f8c6a0.webp?_refresh=1777363298858"
   },
   {
     "id": "IT-003",
@@ -44,8 +44,8 @@
     "status": "active",
     "description": "HP EliteBook 14นิ้ว Intel i7, RAM 16GB, SSD 512GB",
     "createdAt": "2024-01-17T10:00:00.000Z",
-    "updatedAt": "2026-04-27T04:05:03.064Z",
-    "image": "/images/1776762968616-1b5d0308ed47e3d5f0b7c73a71b6cd12.jpg"
+    "updatedAt": "2026-04-28T06:15:03.765Z",
+    "image": "/images/1776762968616-1b5d0308ed47e3d5f0b7c73a71b6cd12.webp"
   },
   {
     "id": "IT-006",

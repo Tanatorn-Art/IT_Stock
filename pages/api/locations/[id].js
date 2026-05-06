@@ -5,7 +5,7 @@ export default function handler(req, res) {
   const { id } = query
 
   if (method === 'PUT') {
-    const { name, description, image } = req.body
+    const { name, description, image, shelfId } = req.body
     if (!name) {
       return res.status(400).json({ message: 'name required' })
     }
@@ -19,6 +19,7 @@ export default function handler(req, res) {
       name: name.trim(),
       description: description || '',
       image: image || locations[idx].image || '',
+      shelfId: shelfId !== undefined ? shelfId : locations[idx].shelfId,
       updatedAt: new Date().toISOString(),
     }
     writeLocations(locations)

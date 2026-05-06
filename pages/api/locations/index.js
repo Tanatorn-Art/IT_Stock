@@ -9,7 +9,7 @@ export default function handler(req, res) {
   }
 
   if (method === 'POST') {
-    const { name, description, image } = req.body
+    const { name, description, image, shelfId } = req.body
     if (!name) {
       return res.status(400).json({ message: 'name required' })
     }
@@ -20,6 +20,7 @@ export default function handler(req, res) {
       name: name.trim(),
       description: description || '',
       image: image || '',
+      shelfId: shelfId || null,
       createdAt: new Date().toISOString(),
     }
     locations.push(location)
