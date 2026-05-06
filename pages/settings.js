@@ -465,9 +465,13 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
         minQuantity: Number(editForm.minQuantity)
       }
 
-      // Only include image in the request if it was actually changed
-      if (newImageFile || finalImageData !== originalImage) {
+      // Only include image in the request if a new image file was uploaded
+      // This preserves existing images when no new image is selected
+      if (newImageFile) {
         requestBody.image = finalImageData
+      } else {
+        // Remove image field to preserve existing image on server
+        delete requestBody.image
       }
 
       const res = await fetch(`/api/stock/${item.id}`, {

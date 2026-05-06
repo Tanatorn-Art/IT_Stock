@@ -26,6 +26,14 @@ export default function StockForm({ item, onSave, onClose }) {
     fetchLocations()
   }, [])
 
+  useEffect(() => {
+    if (item) {
+      setOriginalImage(item.image || '')
+      setOriginalImageFilename(item.image?.split('/').pop() || '')
+      setForm(prev => ({ ...prev, image: item.image || '' }))
+    }
+  }, [item])
+
   const fetchLocations = async () => {
     const res = await fetch('/api/locations')
     const data = await res.json()
@@ -110,15 +118,26 @@ export default function StockForm({ item, onSave, onClose }) {
 
       // Submit form with final image data
       const url = isEdit ? `/api/stock/${item.id}` : '/api/stock'
+
+      // Prepare request body
+      const requestBody = {
+        ...form,
+        quantity: Number(form.quantity),
+        minQuantity: Number(form.minQuantity)
+      }
+
+      // Only include image if new image was uploaded
+      if (newImageFile) {
+        requestBody.image = finalImageData
+      } else {
+        // Remove image field to preserve existing image
+        delete requestBody.image
+      }
+
       const res = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          image: finalImageData,
-          quantity: Number(form.quantity),
-          minQuantity: Number(form.minQuantity)
-        }),
+        body: JSON.stringify(requestBody),
       })
       if (!res.ok) throw new Error()
       onSave(await res.json())

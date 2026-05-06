@@ -1,4 +1,5 @@
 import { readLocations, createLocation } from '../../../lib/locationDb'
+import { readShelfConfig } from '../../../lib/shelfConfigDb'
 
 export default async function handler(req, res) {
   const { method, query } = req
@@ -6,7 +7,25 @@ export default async function handler(req, res) {
   try {
     if (method === 'GET') {
       const locations = await readLocations()
-      return res.status(200).json(locations)
+      const shelfConfig = await readShelfConfig()
+
+      // Create a set of valid location names based on current shelf configuration
+      const validLocationNames = new Set()
+
+      shelfConfig.shelves.forEach(shelf => {
+        shelf.cols.forEach(col => {
+          shelf.rows.forEach(row => {
+            validLocationNames.add(`${col}-${row}`)
+          })
+        })
+      })
+
+      // Filter locations to only include those that match current shelf config
+      const filteredLocations = locations.filter(location =>
+        validLocationNames.has(location.name)
+      )
+
+      return res.status(200).json(filteredLocations)
     }
 
     if (method === 'POST') {
