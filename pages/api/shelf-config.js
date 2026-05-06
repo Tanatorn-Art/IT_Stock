@@ -1,25 +1,30 @@
 import { readShelfConfig, writeShelfConfig } from '../../lib/shelfConfigDb'
 
-export default function handler(req, res) {
-  if (req.method === 'GET') {
-    const config = readShelfConfig()
-    return res.status(200).json(config)
-  }
-
-  if (req.method === 'PUT') {
-    const config = req.body
-    if (!config || !config.shelves || !Array.isArray(config.shelves)) {
-      return res.status(400).json({ message: 'Invalid config format' })
+export default async function handler(req, res) {
+  try {
+    if (req.method === 'GET') {
+      const config = await readShelfConfig()
+      return res.status(200).json(config)
     }
-    // Validate each shelf has required fields
-    for (const shelf of config.shelves) {
-      if (!shelf.id || !Array.isArray(shelf.cols) || !Array.isArray(shelf.rows)) {
-        return res.status(400).json({ message: `Shelf missing required fields (id, cols, rows): ${JSON.stringify(shelf)}` })
+
+    if (req.method === 'PUT') {
+      const config = req.body
+      if (!config || !config.shelves || !Array.isArray(config.shelves)) {
+        return res.status(400).json({ message: 'Invalid config format' })
       }
+      // Validate each shelf has required fields
+      for (const shelf of config.shelves) {
+        if (!shelf.id || !Array.isArray(shelf.cols) || !Array.isArray(shelf.rows)) {
+          return res.status(400).json({ message: `Shelf missing required fields (id, cols, rows): ${JSON.stringify(shelf)}` })
+        }
+      }
+      const saved = await writeShelfConfig(config)
+      return res.status(200).json(saved)
     }
-    const saved = writeShelfConfig(config)
-    return res.status(200).json(saved)
-  }
 
-  res.status(405).json({ message: 'Method not allowed' })
+    res.status(405).json({ message: 'Method not allowed' })
+  } catch (error) {
+    console.error('Error in shelf-config API:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
 }

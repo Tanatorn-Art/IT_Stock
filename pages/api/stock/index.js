@@ -1,47 +1,54 @@
-import { readStock, writeStock, generateId } from '../../../lib/stockDb'
+import { readStock, createStock } from '../../../lib/stockDb'
+import { createApiLogger } from '../../../lib/apiLogger.js'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { method, query } = req
+  const logApi = createApiLogger(req, 'stock', { query })
 
-  if (method === 'GET') {
-    const items = readStock()
-    const { search, category } = query
-    let result = items
-    if (search) {
-      const s = search.toLowerCase()
-      result = result.filter(i =>
-        i.name?.toLowerCase().includes(s) ||
-        i.id?.toLowerCase().includes(s) ||
-        i.brand?.toLowerCase().includes(s) ||
-        i.serial?.toLowerCase().includes(s) ||
-        i.model?.toLowerCase().includes(s)
-      )
+  try {
+    if (method === 'GET') {
+      const { includeDisabled } = query
+      const items = await readStock(includeDisabled === 'true')
+      const { search, category } = query
+      let result = items
+      if (search) {
+        const s = search.toLowerCase()
+        result = result.filter(i =>
+          i.name?.toLowerCase().includes(s) ||
+          i.id?.toLowerCase().includes(s) ||
+          i.brand?.toLowerCase().includes(s) ||
+          i.serial?.toLowerCase().includes(s) ||
+          i.model?.toLowerCase().includes(s)
+        )
+      }
+      if (category && category !== 'all') {
+        result = result.filter(i => i.category === category)
+      }
+      await logApi(200)
+      return res.status(200).json(result)
     }
-    if (category && category !== 'all') {
-      result = result.filter(i => i.category === category)
+
+    if (method === 'POST') {
+      const { name, brand, quantity, location } = req.body
+      if (name === undefined || brand === undefined || quantity === undefined || location === undefined) {
+        await logApi(400, new Error('Missing required fields'))
+        return res.status(400).json({ message: 'name, brand, quantity, location required' })
+      }
+
+      const stockData = { ...req.body }
+      delete stockData.price
+      stockData.status = stockData.quantity <= stockData.minQuantity ? 'low' : 'active'
+
+      const newItem = await createStock(stockData)
+      await logApi(201, null, { itemId: newItem.id })
+      return res.status(201).json(newItem)
     }
-    return res.status(200).json(result)
+
+    await logApi(405)
+    res.status(405).json({ message: 'Method not allowed' })
+  } catch (error) {
+    console.error('Error in stock API:', error)
+    await logApi(500, error)
+    res.status(500).json({ message: 'Internal server error' })
   }
-
-  if (method === 'POST') {
-    const { name, brand, quantity, location } = req.body
-    if (!name || !brand || !quantity || !location) {
-      return res.status(400).json({ message: 'name, brand, quantity, location required' })
-    }
-    const items = readStock()
-    const now = new Date().toISOString()
-    const newItem = {
-      ...req.body,
-      id: generateId(items),
-      status: req.body.quantity <= req.body.minQuantity ? 'low' : 'active',
-      createdAt: now,
-      updatedAt: now,
-    }
-    delete newItem.price
-    items.push(newItem)
-    writeStock(items)
-    return res.status(201).json(newItem)
-  }
-
-  res.status(405).json({ message: 'Method not allowed' })
 }

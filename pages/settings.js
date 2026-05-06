@@ -3,7 +3,8 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
-import { Package, MapPin, Scan, Search, Plus, AlertTriangle, Edit, Trash, X, CheckCircle, Settings, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, FileText, Save, Loader2 } from 'lucide-react'
+import { Package, MapPin, Scan, Search, Plus, AlertTriangle, Edit, Trash, X, CheckCircle, Settings, ChevronDown, Laptop, Monitor, Mouse, Network, Server, HardDrive, Smartphone, Tablet, Box, FileText, Save, Loader2, Download, Upload, Database, Clock, FileArchive, Trash2, RefreshCw } from 'lucide-react'
+import SettingsDropdown from '../components/SettingsDropdown'
 
 const StockForm = dynamic(() => import('../components/StockForm'), { ssr: false })
 
@@ -21,6 +22,13 @@ export default function SettingsPage() {
   const [toast,    setToast]    = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false)
+
+  // Backup related states
+  const [backups, setBackups] = useState([])
+  const [backupLoading, setBackupLoading] = useState(false)
+  const [showBackupModal, setShowBackupModal] = useState(false)
+  const [restoreFile, setRestoreFile] = useState(null)
 
   const showToast = (msg, type='success') => {
     setToast({msg,type})
@@ -33,12 +41,16 @@ export default function SettingsPage() {
       const p = new URLSearchParams()
       if (search) p.set('search', search)
       if (category !== 'all') p.set('category', category)
+      p.set('includeDisabled', 'true') // Include disabled items
       const res = await fetch(`/api/stock?${p}`)
       setItems(await res.json())
     } finally { setLoading(false) }
   }, [search, category])
 
-  useEffect(() => { fetchItems() }, [fetchItems])
+  useEffect(() => {
+    fetchItems()
+    fetchBackups()
+  }, [fetchItems])
 
   // Sync selected item with URL
   useEffect(() => {
@@ -76,12 +88,13 @@ export default function SettingsPage() {
   }
 
   const handleDelete = async (item) => {
+    const isDisabled = item.disabledAt !== null && item.disabledAt !== undefined
     await fetch(`/api/stock/${item.id}`, { method:'DELETE' })
     setDelItem(null)
     setSelectedItem(null)
     router.push({ pathname: '/settings' }, undefined, { shallow: true })
     fetchItems()
-    showToast(`ลบ ${item.id} เรียบร้อย`, 'danger')
+    showToast(isDisabled ? `คืนค่า ${item.id} เรียบร้อย` : `ปิดใช้งาน ${item.id} เรียบร้อย`, isDisabled ? 'success' : 'danger')
   }
 
   const handleRowClick = (item) => {
@@ -91,7 +104,154 @@ export default function SettingsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const sorted = [...items].sort((a,b) => a.id.localeCompare(b.id))
+  // Backup functions
+  const fetchBackups = async () => {
+    try {
+      const res = await fetch('/api/backup')
+      const data = await res.json()
+      setBackups(data.backups || [])
+    } catch (error) {
+      console.error('Failed to fetch backups:', error)
+      showToast('Failed to fetch backups', 'error')
+    }
+  }
+
+  const createBackup = async (reason = 'manual') => {
+    setBackupLoading(true)
+    try {
+      const res = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', reason })
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('Backup created successfully')
+        await fetchBackups()
+      } else {
+        showToast(data.error || 'Failed to create backup', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to create backup:', error)
+      showToast('Failed to create backup', 'error')
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
+  const restoreFromBackup = async (fileName) => {
+    if (!confirm('Are you sure you want to restore from this backup? This will replace the current database.')) {
+      return
+    }
+
+    setBackupLoading(true)
+    try {
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        body: JSON.stringify({ fileName })
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('Database restored successfully')
+        await fetchItems() // Refresh stock data
+        await fetchBackups()
+      } else {
+        showToast(data.error || 'Failed to restore database', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to restore database:', error)
+      showToast('Failed to restore database', 'error')
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
+  const deleteBackup = async (fileName) => {
+    if (!confirm('Are you sure you want to delete this backup?')) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/backup?fileName=${encodeURIComponent(fileName)}`, {
+        method: 'DELETE'
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('Backup deleted successfully')
+        await fetchBackups()
+      } else {
+        showToast(data.error || 'Failed to delete backup', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete backup:', error)
+      showToast('Failed to delete backup', 'error')
+    }
+  }
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.sqlite')) {
+      showToast('Please select a .sqlite file', 'error')
+      return
+    }
+
+    if (!confirm('Are you sure you want to restore from this file? This will replace the current database.')) {
+      return
+    }
+
+    setBackupLoading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('Database restored successfully')
+        await fetchItems() // Refresh stock data
+        await fetchBackups()
+      } else {
+        showToast(data.error || 'Failed to restore database', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to restore database:', error)
+      showToast('Failed to restore database', 'error')
+    } finally {
+      setBackupLoading(false)
+      event.target.value = '' // Clear file input
+    }
+  }
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleString('th-TH', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const sorted = [...items].sort((a,b) => {
+  // Sort by createdAt in descending order (newest first)
+  // If createdAt is missing, treat it as oldest
+  const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0)
+  const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0)
+  return dateB.getTime() - dateA.getTime()
+})
 
   const filtered = sorted.filter(item => {
     if (search) {
@@ -125,10 +285,11 @@ export default function SettingsPage() {
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(false)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
-              <Link href="/settings" className="nav-link" style={navItem(true)}><Settings size={16} /> ตั้งค่า</Link>
+              {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="settings" /> */}
             </div>
             <div style={navbarRight}>
               <CategoryDropdown current={category} onSelect={setCategory} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
+              <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="settings" />
               <Stat label="รายการ" val={stats.total} unit="รายการ" />
               <Stat label="รวม" val={stats.totalQty} unit="ชิ้น" />
               <Stat label="ใกล้หมด" val={stats.low} unit="รายการ" color={stats.low>0?'var(--warning)':'var(--success)'} />
@@ -147,14 +308,15 @@ export default function SettingsPage() {
             </div>
 
             <button onClick={()=>setFormItem(null)} style={addBtn}><Plus size={14} /> เพิ่มอุปกรณ์</button>
+            {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="settings" /> */}
           </div>
 
           {/* Alert */}
-          {stats.low>0 && (
+          {/* {stats.low>0 && (
             <div style={alertBar}>
               <AlertTriangle size={16} style={{marginRight: 8}} /> มี <b>{stats.low} รายการ</b> ที่ Stock ใกล้หมด
             </div>
-          )}
+          )} */}
 
           {/* Content */}
           {loading ? (
@@ -202,6 +364,8 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
   const [locations, setLocations] = useState([])
   const Icon = ICON[item.category] || Box
   const low = editForm.quantity <= editForm.minQuantity
+  const isDisabled = item.disabledAt !== null && item.disabledAt !== undefined
+  const isOutOfStock = item.quantity === 0
 
   // Fetch locations
   useEffect(() => {
@@ -295,15 +459,21 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
       }
 
       // Submit form with final image data
+      const requestBody = {
+        ...editForm,
+        quantity: Number(editForm.quantity),
+        minQuantity: Number(editForm.minQuantity)
+      }
+
+      // Only include image in the request if it was actually changed
+      if (newImageFile || finalImageData !== originalImage) {
+        requestBody.image = finalImageData
+      }
+
       const res = await fetch(`/api/stock/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...editForm,
-          image: finalImageData,
-          quantity: Number(editForm.quantity),
-          minQuantity: Number(editForm.minQuantity)
-        }),
+        body: JSON.stringify(requestBody),
       })
       if (!res.ok) throw new Error()
       const saved = await res.json()
@@ -473,9 +643,9 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
                   <Edit size={16} />
                   แก้ไข
                 </button>
-                <button onClick={onDelete} style={{background:'rgba(220,53,69,0.8)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.3)',color:'white',borderRadius:8,padding:'10px 20px',fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,boxShadow:'0 4px 15px rgba(220,53,69,0.3)'}}>
-                  <Trash size={16} />
-                  ลบ
+                <button onClick={onDelete} style={{background:isDisabled?'rgba(25,135,84,0.8)':'rgba(220,53,69,0.8)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.3)',color:'white',borderRadius:8,padding:'10px 20px',fontSize:14,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,boxShadow:isDisabled?'0 4px 15px rgba(25,135,84,0.3)':'0 4px 15px rgba(220,53,69,0.3)'}}>
+                  {isDisabled ? <RefreshCw size={16} /> : <Trash size={16} />}
+                  {isDisabled ? 'คืนค่า' : 'ปิดใช้งาน'}
                 </button>
               </>
             )}
@@ -493,9 +663,9 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
               {isEditing ? (
                 <>
                   {editForm.image ? (
-                    <img src={editForm.image} alt={editForm.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                    <img src={editForm.image} alt={editForm.name} style={{width:'100%',height:'100%',objectFit:'cover', filter: (isDisabled || isOutOfStock) ? 'grayscale(100%)' : 'none'}} />
                   ) : (
-                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#6c757d'}}>
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:(isDisabled || isOutOfStock) ? '#999' : '#6c757d'}}>
                       <Package size={64} />
                       <span style={{marginTop:12,fontSize:14,fontWeight:500}}>ไม่มีรูปภาพ</span>
                       <span style={{marginTop:4,fontSize:12,opacity:0.7}}>คลิกเพื่ออัปโหลด</span>
@@ -511,14 +681,49 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
               ) : (
                 <>
                   {item.image ? (
-                    <img src={item.image} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                    <img src={item.image} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover', filter: (isDisabled || isOutOfStock) ? 'grayscale(100%)' : 'none'}} />
                   ) : (
-                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#6c757d'}}>
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:(isDisabled || isOutOfStock) ? '#999' : '#6c757d'}}>
                       <Icon size={64} />
                       <span style={{marginTop:12,fontSize:14,fontWeight:500}}>ไม่มีรูปภาพ</span>
                     </div>
                   )}
                 </>
+              )}
+              {isDisabled && !isEditing && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%) rotate(-15deg)',
+                  color: '#dc3545',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  pointerEvents: 'none',
+                  whiteSpace: 'nowrap',
+                  textShadow: '2px 2px 4px rgba(255,255,255,0.9)',
+                  zIndex: 10
+                }}>
+                  Not use
+                </div>
+              )}
+              {isOutOfStock && !isEditing && !isDisabled && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  // transform: 'translate(-50%, -50%) rotate(-15deg)',
+                  color: '#dc3545',
+                  fontSize: '70px',
+                  fontWeight: 'bold',
+                  // fontStyle: 'italic',
+                  pointerEvents: 'none',
+                  whiteSpace: 'nowrap',
+                  textShadow: '2px 2px 4px rgba(255,255,255,0.9)',
+                  zIndex: 10
+                }}>
+                  หมด
+                </div>
               )}
             </div>
 
@@ -573,7 +778,7 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
           </div>
 
           {/* Status Badge */}
-          <div style={{marginTop:16,display:'flex',justifyContent:'center'}}>
+          {/* <div style={{marginTop:16,display:'flex',justifyContent:'center'}}>
             <div style={{
               background: low ? '#f8d7da' : '#d4edda',
               color: low ? '#721c24' : '#155724',
@@ -589,7 +794,7 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
               <AlertTriangle size={16} />
               {low ? 'Stock ใกล้หมด' : 'พร้อมใช้งาน'}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Side - Product Details */}
@@ -684,7 +889,9 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
               </div>
               <div>
                 <label style={{fontSize:12,color:'#6c757d',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,display:'block',marginBottom:6}}>สถานะ</label>
-                <div style={{fontSize:16,fontWeight:500,color:'#28a745'}}>พร้อมใช้งาน</div>
+                <div style={{fontSize:16,fontWeight:500,color:isDisabled ? '#dc3545' : (isOutOfStock ? '#dc3545' : '#28a745'), fontStyle: isOutOfStock ? 'italic' : 'normal'}}>
+                  {isDisabled ? 'ปิดใช้งาน' : (isOutOfStock ? 'ว่าง' : 'พร้อมใช้งาน')}
+                </div>
               </div>
             </div>
           </div>
@@ -744,31 +951,75 @@ function TableView({items, selected, onRowClick, onEdit, onDelete}) {
         <tbody>
           {items.map(item=>{
             const low = item.quantity<=item.minQuantity
+            const isDisabled = item.disabledAt !== null && item.disabledAt !== undefined
+            const isOutOfStock = item.quantity === 0
+
             return (
-              <tr key={item.id} className="row-hover" onClick={()=>onRowClick(item)} style={{background:selected?.id===item.id?'var(--accent-glow)':'rgba(255,255,255,0.85)',borderRadius:6,cursor:'pointer',border:selected?.id===item.id?'1px solid var(--accent)':'none'}}>
-                <td style={{...tdSt,padding:'6px 8px',borderTopLeftRadius:6,borderBottomLeftRadius:6}}>
-                  <span style={{fontFamily:'var(--mono)',color:'var(--accent)',fontSize:11,fontWeight:600}}>{item.id}</span>
+              <tr key={item.id} className="row-hover" onClick={()=>onRowClick(item)} style={{
+                background: isDisabled ? '#f5f5f5' : (selected?.id===item.id?'var(--accent-glow)':'rgba(255,255,255,0.85)'),
+                borderRadius:6,
+                cursor:'pointer',
+                border:selected?.id===item.id?'1px solid var(--accent)':'none',
+                opacity: isDisabled ? 0.6 : 1
+              }}>
+                <td style={{...tdSt,padding:'6px 8px',borderTopLeftRadius:6,borderBottomLeftRadius:6, position: 'relative'}}>
+                  <span style={{fontFamily:'var(--mono)',color:isDisabled ? '#999' : 'var(--accent)',fontSize:11,fontWeight:600}}>{item.id}</span>
+                </td>
+                <td style={{...tdSt,padding:'6px 8px', position: 'relative'}}>
+                  <div style={{fontWeight:600,fontSize:12,color:isDisabled ? '#999' : 'var(--text)',lineHeight:1.3}}>{item.name}</div>
+                  <div style={{fontSize:10,color:isDisabled ? '#bbb' : 'var(--text3)'}}>{item.brand} {item.model}</div>
+                  {isDisabled && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%) rotate(-15deg)',
+                      color: '#dc3545',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      pointerEvents: 'none',
+                      whiteSpace: 'nowrap',
+                      textShadow: '1px 1px 2px rgba(255,255,255,0.8)'
+                    }}>
+                      Not use
+                    </div>
+                  )}
+                  {isOutOfStock && !isDisabled && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%) rotate(-15deg)',
+                      color: '#dc3545',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      // fontStyle: 'italic',
+                      pointerEvents: 'none',
+                      whiteSpace: 'nowrap',
+                      textShadow: '1px 1px 2px rgba(255,255,255,0.9)'
+                    }}>
+                      Empty
+                    </div>
+                  )}
                 </td>
                 <td style={{...tdSt,padding:'6px 8px'}}>
-                  <div style={{fontWeight:600,fontSize:12,color:'var(--text)',lineHeight:1.3}}>{item.name}</div>
-                  <div style={{fontSize:10,color:'var(--text3)'}}>{item.brand} {item.model}</div>
+                  <span style={{...catTag, opacity: isDisabled ? 0.5 : 1}}>{item.category}</span>
                 </td>
-                <td style={{...tdSt,padding:'6px 8px'}}><span style={catTag}>{item.category}</span></td>
                 <td style={{...tdSt,padding:'6px 8px'}}>
-                  <span style={{fontFamily:'var(--mono)',fontSize:10,color:item.serial?'var(--text3)':'#94a3b8',fontStyle:item.serial?'normal':'italic'}}>
+                  <span style={{fontFamily:'var(--mono)',fontSize:10,color:item.serial?(isDisabled ? '#999' : 'var(--text3)'):'#94a3b8',fontStyle:item.serial?'normal':'italic'}}>
                     {item.serial || 'ไม่ระบุ'}
                   </span>
                 </td>
                 <td style={{...tdSt,padding:'6px 8px',textAlign:'center'}}>
-                  <span style={{...qtyBadge(low),display:'inline-flex',padding:'2px 8px',alignItems:'center',gap:3,fontSize:11}}>
+                  <span style={{...qtyBadge(low),display:'inline-flex',padding:'2px 8px',alignItems:'center',gap:3,fontSize:11, opacity: isDisabled ? 0.5 : 1}}>
                     {low&&<AlertTriangle size={10} />}<span style={{fontFamily:'var(--mono)',fontWeight:700}}>{item.quantity}</span>
                   </span>
                 </td>
                 <td style={{...tdSt,padding:'6px 8px',textAlign:'center'}}>
-                  <span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--text3)'}}>{item.minQuantity}</span>
+                  <span style={{fontFamily:'var(--mono)',fontSize:11,color:isDisabled ? '#999' : 'var(--text3)'}}>{item.minQuantity}</span>
                 </td>
                 <td style={{...tdSt,padding:'6px 8px'}}>
-                  <span style={{fontSize:11,color:item.location?'var(--text3)':'#94a3b8',fontStyle:item.location?'normal':'italic'}}>
+                  <span style={{fontSize:11,color:item.location?(isDisabled ? '#999' : 'var(--text3)'):'#94a3b8',fontStyle:item.location?'normal':'italic'}}>
                     {item.location || 'ไม่ระบุ'}
                   </span>
                 </td>
@@ -782,21 +1033,35 @@ function TableView({items, selected, onRowClick, onEdit, onDelete}) {
 }
 
 function DelModal({item, onConfirm, onClose}) {
+  const isDisabled = item.disabledAt !== null && item.disabledAt !== undefined
+
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,backdropFilter:'blur(4px)'}}>
-      <div style={{background:'var(--surface)',border:'1px solid var(--danger)',borderRadius:16,padding:20,maxWidth:380,width:'90%',textAlign:'center'}}>
-        <div style={{fontSize:32,marginBottom:10}}><AlertTriangle size={32} style={{color:'var(--danger)'}} /></div>
-        <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>ยืนยันการลบ</div>
+      <div style={{background:'var(--surface)',border:`1px solid ${isDisabled ? 'var(--success)' : 'var(--danger)'}`,borderRadius:16,padding:20,maxWidth:380,width:'90%',textAlign:'center'}}>
+        <div style={{fontSize:32,marginBottom:10}}>
+          {isDisabled ?
+            <RefreshCw size={32} style={{color:'var(--success)'}} /> :
+            <AlertTriangle size={32} style={{color:'var(--danger)'}} />
+          }
+        </div>
+        <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>
+          {isDisabled ? 'ยืนยันการคืนค่า' : 'ยืนยันการปิดใช้งาน'}
+        </div>
         <div style={{fontSize:13,color:'var(--text2)',marginBottom:2}}>
           <span style={{color:'var(--accent)',fontFamily:'var(--mono)'}}>{item.id}</span>
         </div>
         <div style={{fontSize:15,fontWeight:600,marginBottom:16}}>{item.name}</div>
-        <div style={{fontSize:13,color:'var(--text3)',marginBottom:20,padding:'10px 16px',background:'rgba(239,68,68,0.1)',borderRadius:8}}>
-          การลบรายการนี้จะลบข้อมูลออกจากระบบทั้งหมด
+        <div style={{fontSize:13,color:'var(--text3)',marginBottom:20,padding:'10px 16px',background:isDisabled ? 'rgba(25,135,84,0.1)' : 'rgba(239,68,68,0.1)',borderRadius:8}}>
+          {isDisabled ?
+            'การคืนค่ารายการนี้จะทำให้รายการกลับมาพร้อมใช้งานอีกครั้ง' :
+            'การปิดใช้งานรายการนี้จะไม่ลบข้อมูล แต่จะแสดงว่าถูกปิดใช้งาน'
+          }
         </div>
         <div style={{display:'flex',gap:10,justifyContent:'center'}}>
           <button onClick={onClose} style={{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',borderRadius:8,padding:'8px 18px',cursor:'pointer',fontSize:13}}>ยกเลิก</button>
-          <button onClick={onConfirm} style={{background:'var(--danger)',color:'white',border:'none',borderRadius:8,padding:'8px 18px',cursor:'pointer',fontSize:13,fontWeight:700}}>ลบออก</button>
+          <button onClick={onConfirm} style={{background:isDisabled ? 'var(--success)' : 'var(--danger)',color:'white',border:'none',borderRadius:8,padding:'8px 18px',cursor:'pointer',fontSize:13,fontWeight:700}}>
+            {isDisabled ? 'คืนค่า' : 'ปิดใช้งาน'}
+          </button>
         </div>
       </div>
     </div>
@@ -843,6 +1108,7 @@ function CategoryDropdown({ current, onSelect, isOpen, onToggle }) {
     </div>
   )
 }
+
 
 // ── styles ──
 const layout={display:'flex',flexDirection:'column',minHeight:'100vh'}

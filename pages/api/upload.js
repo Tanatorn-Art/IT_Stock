@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { writeFile } from 'fs/promises'
+import sharp from 'sharp'
 
 export const config = {
   api: {
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { image, filename } = req.body
+    const { image, filename, stockId } = req.body
 
     if (!image || !filename) {
       return res.status(400).json({ error: 'Missing image or filename' })
@@ -32,12 +33,22 @@ export default async function handler(req, res) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
 
-    // Save file
-    const filePath = path.join(uploadDir, filename)
-    await writeFile(filePath, buffer)
+    // Generate unique filename with timestamp and stockId if provided
+    const timestamp = Date.now()
+    const baseName = stockId ? `${stockId}-${timestamp}` : `upload-${timestamp}`
+    const webpFilename = `${baseName}.webp`
+
+    // Convert to WebP using Sharp
+    const webpBuffer = await sharp(buffer)
+      .webp({ quality: 85 })
+      .toBuffer()
+
+    // Save WebP file
+    const filePath = path.join(uploadDir, webpFilename)
+    await writeFile(filePath, webpBuffer)
 
     // Return the public path
-    const publicPath = `/images/${filename}`
+    const publicPath = `/images/${webpFilename}`
     res.status(200).json({ path: publicPath })
   } catch (error) {
     console.error('Upload error:', error)

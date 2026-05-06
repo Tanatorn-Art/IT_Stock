@@ -7,6 +7,7 @@ import { Package, MapPin, Scan, Search, Plus, AlertTriangle, ChevronDown, Laptop
 const BarcodeModal = dynamic(() => import('../components/BarcodeModal'), { ssr: false })
 const StockForm    = dynamic(() => import('../components/StockForm'),    { ssr: false })
 const ViewModal    = dynamic(() => import('../components/ViewModal'),    { ssr: false })
+const SettingsDropdown = dynamic(() => import('../components/SettingsDropdown'), { ssr: false })
 
 const CATS = ['all','Laptop','Desktop','Monitor','Peripheral','Network','Server','Storage','Phone','Tablet','Other']
 const ICON = {Laptop:Laptop,Desktop:Monitor,Monitor:Monitor,Peripheral:Mouse,Network:Network,Server:Server,Storage:HardDrive,Phone:Smartphone,Tablet:Tablet,Other:Box,all:Box}
@@ -24,6 +25,7 @@ export default function Home() {
   const [sortBy,   setSortBy]   = useState('id')
   const [toast,    setToast]    = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false)
 
   const showToast = (msg, type='success') => {
     setToast({msg,type})
@@ -57,10 +59,11 @@ export default function Home() {
   }
 
   const sorted = [...items].sort((a,b) => {
-    if (sortBy==='name')    return a.name.localeCompare(b.name)
-    if (sortBy==='qty')     return b.quantity - a.quantity
-    if (sortBy==='qty_asc') return a.quantity - b.quantity
-    return a.id.localeCompare(b.id)
+    // Sort by createdAt in descending order (newest first)
+    // If createdAt is missing, treat it as oldest
+    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0)
+    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0)
+    return dateB.getTime() - dateA.getTime()
   })
 
   const stats = {
@@ -88,10 +91,11 @@ export default function Home() {
               <Link href="/" className="nav-link" style={navItem(true)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(false)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
-              <Link href="/settings" className="nav-link" style={navItem(false)}><Settings size={16} /> ตั้งค่า</Link>
+              {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="index" /> */}
             </div>
             <div style={navbarRight}>
               <CategoryDropdown current={category} onSelect={setCategory} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
+              <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="index" />
               <Stat label="รายการ" val={stats.total} unit="รายการ" />
               <Stat label="รวม" val={stats.totalQty} unit="ชิ้น" />
               <Stat label="ใกล้หมด" val={stats.low} unit="รายการ" color={stats.low>0?'var(--warning)':'var(--success)'} />
@@ -113,11 +117,11 @@ export default function Home() {
           </div>
 
           {/* Alert */}
-          {stats.low>0 && (
+          {/* {stats.low>0 && (
             <div style={alertBar}>
               <AlertTriangle size={16} style={{marginRight: 8}} /> มี <b>{stats.low} รายการ</b> ที่ Stock ใกล้หมด
             </div>
-          )}
+          )} */}
 
           {/* Content */}
           {loading ? (
@@ -126,7 +130,7 @@ export default function Home() {
             <div style={centerBox}>
               <Package size={48} style={{marginBottom:12,color:'var(--text3)'}} />
               <div style={{color:'var(--text2)',fontSize:14}}>ไม่พบรายการ</div>
-              <button onClick={()=>setFormItem(null)} style={{...addBtn,marginTop:14}}><Plus size={14} /> เพิ่มรายการแรก</button>
+              {/* <button onClick={()=>setFormItem(null)} style={{...addBtn,marginTop:14}}><Plus size={14} /> เพิ่มรายการแรก</button> */}
             </div>
           ) : viewMode==='grid' ? (
             <div style={grid}>
@@ -167,15 +171,50 @@ export default function Home() {
 
 function Card({item, onEdit, onDelete, onBarcode, onClick}) {
   const low = item.quantity <= item.minQuantity
+  const isOutOfStock = item.quantity === 0
   return (
     <div className="card" style={cardSt} onClick={onClick}>
       {item.image ? (
-        <div style={cardImgWrap}>
-          <img src={item.image} alt={item.name} style={cardImg} />
+        <div style={{...cardImgWrap, position: 'relative'}}>
+          <img src={item.image} alt={item.name} style={{...cardImg, filter: isOutOfStock ? 'grayscale(100%)' : 'none'}} />
+          {isOutOfStock && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: '#dc3545',
+              fontSize: '50px',
+              fontWeight: 'bold',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              textShadow: '2px 2px 4px rgba(255,255,255,0.8)',
+              zIndex: 10
+            }}>
+              หมด
+            </div>
+          )}
         </div>
       ) : (
-        <div style={cardNoImg}>
+        <div style={{...cardNoImg, position: 'relative', filter: isOutOfStock ? 'grayscale(100%)' : 'none'}}>
           {React.createElement(ICON[item.category] || Box, {size: 64})}
+          {isOutOfStock && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: '#dc3545',
+              fontSize: '50px',
+              fontWeight: 'bold',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              textShadow: '2px 2px 4px rgba(255,255,255,0.9)',
+              zIndex: 10
+            }}>
+              หมด
+            </div>
+          )}
         </div>
       )}
       <div style={cardBody}>
@@ -291,6 +330,7 @@ function CategoryDropdown({ current, onSelect, isOpen, onToggle }) {
     </div>
   )
 }
+
 
 // ── styles ──
 const layout={display:'flex',flexDirection:'column',minHeight:'100vh'}

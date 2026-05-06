@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import ShelfMap from '../components/Shelfmap'
 import ShelfConfigEditor from '../components/ShelfConfigEditor'
+import SettingsDropdown from '../components/SettingsDropdown.js'
 import { Package, MapPin, Scan, Settings, Loader2, Save, Plus, Sliders } from 'lucide-react'
 
 export default function LocationPage() {
@@ -18,6 +19,7 @@ export default function LocationPage() {
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [selectedShelfId, setSelectedShelfId] = useState(null)
   const [pageLoaded, setPageLoaded] = useState(false)
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false)
   const [shelfConfig, setShelfConfig] = useState(null)
   const [showConfigEditor, setShowConfigEditor] = useState(false)
   const toastTimer = useRef(null)
@@ -162,9 +164,10 @@ export default function LocationPage() {
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(true)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
-              <Link href="/settings" className="nav-link" style={navItem(false)}><Settings size={16} /> ตั้งค่า</Link>
+              {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" /> */}
             </div>
             <div style={navbarRight}>
+              <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" />
               <Stat label="ตำแหน่ง" val={locations.length} unit="รายการ" />
             </div>
           </div>
@@ -294,8 +297,8 @@ export default function LocationPage() {
         /* Default shelf state */
         .shelf-default{flex:1;opacity:1;transform:translateX(0)}
         /* Selected shelf expands, others hide */
-        .shelf-selected{flex:1;opacity:1;transform:translateX(0)}
-        .shelf-hidden{flex:0;width:0;opacity:0;overflow:hidden;padding:0;margin:0}
+        .shelf-selected{flex:1;opacity:1;transform:translateX(0) scale(1);)}
+        .shelf-hidden{flex:0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
         /* Stock cards panel */
         .panel-right{order:99;flex:0;width:0;opacity:0;transform:translateX(100%);overflow:hidden}
         .panel-right.slide-in-right{opacity:1;transform:translateX(0);flex:1;width:auto;overflow:visible}

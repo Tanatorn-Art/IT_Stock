@@ -1,42 +1,49 @@
-import { readLocations, writeLocations } from '../../../lib/locationDb'
+import { getLocationById, updateLocation, deleteLocation } from '../../../lib/locationDb'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { method, query } = req
   const { id } = query
 
-  if (method === 'PUT') {
-    const { name, description, image, shelfId } = req.body
-    if (!name) {
-      return res.status(400).json({ message: 'name required' })
+  try {
+    if (method === 'PUT') {
+      const { name, description, image, shelfId } = req.body
+      if (!name) {
+        return res.status(400).json({ message: 'name required' })
+      }
+
+      const existingLocation = await getLocationById(id)
+      if (!existingLocation) {
+        return res.status(404).json({ message: 'Location not found' })
+      }
+
+      const updates = {
+        name: name.trim(),
+        description: description || '',
+        image: image || existingLocation.image || '',
+        shelfId: shelfId !== undefined ? shelfId : existingLocation.shelfId,
+      }
+
+      const updatedLocation = await updateLocation(id, updates)
+      return res.status(200).json(updatedLocation)
     }
 
-    const locations = readLocations()
-    const idx = locations.findIndex(l => l.id === id)
-    if (idx === -1) return res.status(404).json({ message: 'Location not found' })
+    if (method === 'DELETE') {
+      const existingLocation = await getLocationById(id)
+      if (!existingLocation) {
+        return res.status(404).json({ message: 'Location not found' })
+      }
 
-    locations[idx] = {
-      ...locations[idx],
-      name: name.trim(),
-      description: description || '',
-      image: image || locations[idx].image || '',
-      shelfId: shelfId !== undefined ? shelfId : locations[idx].shelfId,
-      updatedAt: new Date().toISOString(),
+      const deleted = await deleteLocation(id)
+      if (!deleted) {
+        return res.status(500).json({ message: 'Failed to delete location' })
+      }
+
+      return res.status(200).json({ message: 'Deleted' })
     }
-    writeLocations(locations)
 
-    return res.status(200).json(locations[idx])
+    res.status(405).json({ message: 'Method not allowed' })
+  } catch (error) {
+    console.error('Error in location API:', error)
+    res.status(500).json({ message: 'Internal server error' })
   }
-
-  if (method === 'DELETE') {
-    const locations = readLocations()
-    const idx = locations.findIndex(l => l.id === id)
-    if (idx === -1) return res.status(404).json({ message: 'Location not found' })
-
-    locations.splice(idx, 1)
-    writeLocations(locations)
-
-    return res.status(200).json({ message: 'Deleted' })
-  }
-
-  res.status(405).json({ message: 'Method not allowed' })
 }

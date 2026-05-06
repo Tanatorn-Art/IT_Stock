@@ -15,6 +15,7 @@ export default function ViewModal({ item, onClose, onEdit }) {
   }
 
   const low = item.quantity <= item.minQuantity
+  const isOutOfStock = item.quantity === 0
 
   return (
     <div style={OV} onClick={onClose}>
@@ -29,10 +30,48 @@ export default function ViewModal({ item, onClose, onEdit }) {
           {/* Product Image - Left */}
           <div style={IMG_WRAP}>
             {item.image ? (
-              <img src={item.image} alt={item.name} style={IMG} />
+              <div style={{position: 'relative', width: '100%', height: '100%'}}>
+                <img src={item.image} alt={item.name} style={{...IMG, filter: isOutOfStock ? 'grayscale(100%)' : 'none'}} />
+                {isOutOfStock && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: '#dc3545',
+                    fontSize: '60px',
+                    fontWeight: 'bold',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    textShadow: '2px 2px 4px rgba(255,255,255,0.8)',
+                    zIndex: 10
+                  }}>
+                    หมด
+                  </div>
+                )}
+              </div>
             ) : (
-              <div style={NO_IMG}>
-                <Package size={64} style={{color:'var(--text3)'}} />
+              <div style={{position: 'relative', width: '100%', height: '100%'}}>
+                <div style={{...NO_IMG, filter: isOutOfStock ? 'grayscale(100%)' : 'none'}}>
+                  <Package size={64} style={{color:'var(--text3)'}} />
+                </div>
+                {isOutOfStock && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: '#dc3545',
+                    fontSize: '60px',
+                    fontWeight: 'bold',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    textShadow: '2px 2px 4px rgba(255,255,255,0.8)',
+                    zIndex: 10
+                  }}>
+                    หมด
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -58,12 +97,12 @@ export default function ViewModal({ item, onClose, onEdit }) {
             </div>
 
             {/* Low Stock Alert */}
-            {low && (
+            {/* {low && (
               <div style={ALERT}>
                 <AlertTriangle size={14} style={{marginRight:6}} />
                 Stock ใกล้หมด (เหลือน้อยกว่า {item.minQuantity} ชิ้น)
               </div>
-            )}
+            )} */}
 
             {/* Details Grid */}
             <div style={DETAILS}>
