@@ -290,15 +290,17 @@ export default function LocationPage() {
         @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes modal-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
         /* Initial page load animation - must be first */
-        .panels-wrapper{display:flex;flex-direction:row;justify-content:center;width:100%;gap:20px;position:relative;overflow:hidden;opacity:0;transform:translateY(20px)}
+        .panels-wrapper{display:flex;flex-wrap:wrap;justify-content:center;width:100%;gap:20px;position:relative;opacity:0;transform:translateY(20px)}
         .panels-wrapper.slide-up{opacity:1;transform:translateY(0);transition:opacity .5s ease,transform .5s cubic-bezier(0.4,0,0.2,1)}
         /* Panel transitions */
         .shelf-panel,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
+        /* Ensure consistent shelf sizing */
+        .shelf-panel{display:flex;flex-direction:column;min-height:200px;flex:1 1 calc(33.333% - 20px);max-width:calc(33.333% - 20px);}
         /* Default shelf state */
-        .shelf-default{flex:1;opacity:1;transform:translateX(0)}
+        .shelf-default{opacity:1;transform:translateX(0)}
         /* Selected shelf expands, others hide */
-        .shelf-selected{flex:1;opacity:1;transform:translateX(0) scale(1);)}
-        .shelf-hidden{flex:0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
+        .shelf-selected{opacity:1;transform:translateX(0) scale(1);)}
+        .shelf-hidden{flex:0 0 0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
         /* Stock cards panel */
         .panel-right{order:99;flex:0;width:0;opacity:0;transform:translateX(100%);overflow:hidden}
         .panel-right.slide-in-right{opacity:1;transform:translateX(0);flex:1;width:auto;overflow:visible}
