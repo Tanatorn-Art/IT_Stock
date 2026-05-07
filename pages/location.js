@@ -163,7 +163,7 @@ export default function LocationPage() {
             <div style={navbarNav}>
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(true)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
-              <Link href="/scan" className="nav-link" style={navItem(false)}><Scan size={16} /> Scan รับ/นำออก</Link>
+              <Link href="" className="nav-link" style={navItem(false)}><Scan size={16} /> ยืม & เบิก อุปกรณ์ ( Develop )</Link>
               {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" /> */}
             </div>
             <div style={navbarRight}>
@@ -298,7 +298,7 @@ export default function LocationPage() {
         .shelf-panel,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
         /* Ensure consistent shelf sizing */
         .shelf-panel{display:flex;flex-direction:column;min-height:200px;flex:1 1 calc(33.333% - 20px);max-width:calc(33.333% - 20px);}
-        .shelf-panel.shelf-selected{flex:1 1 60%;max-width:60%}
+        .shelf-panel.shelf-selected{flex:1 1 60%;max-width:60%;max-height:350px}
         .shelf-panel.shelf-selected .shelf-content{display:flex;gap:20px}
         /* Default shelf state */
         .shelf-default{opacity:1;transform:translateX(0)}
