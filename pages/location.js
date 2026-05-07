@@ -234,28 +234,30 @@ export default function LocationPage() {
                       className={`shelf-panel ${isSelected ? 'shelf-selected' : isHidden ? 'shelf-hidden' : 'shelf-default'}`}
                       style={{ order: idx + 1 }}
                     >
-                      <ShelfMap
-                        shelfId={shelf.id}
-                        config={shelfConfig}
-                        locations={locations}
-                        selectedLocation={selectedLocation}
-                        onLocationSelect={(loc) => handleShelfSelect(shelf.id, loc)}
-                      />
+                      <div className="shelf-content">
+                        <div style={{ flex: 1 }}>
+                          <ShelfMap
+                            shelfId={shelf.id}
+                            config={shelfConfig}
+                            locations={locations}
+                            selectedLocation={selectedLocation}
+                            onLocationSelect={(loc) => handleShelfSelect(shelf.id, loc)}
+                          />
+                        </div>
+                        {isSelected && selectedLocation && (
+                          <div style={{ flex: 1, maxWidth: '400px' }}>
+                            <LocationStockCards
+                              location={selectedLocation}
+                              stockItems={locationStockItems}
+                              onClose={() => handleShelfSelect(selectedShelfId, selectedLocation)}
+                              highlightedItemId={highlightedItemId}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )
                 })}
-
-                {/* Right Panel - Stock Cards */}
-                <div className={`panel-right ${selectedLocation ? 'slide-in-right' : 'slide-out-right'}`}>
-                  {selectedLocation && (
-                    <LocationStockCards
-                      location={selectedLocation}
-                      stockItems={locationStockItems}
-                      onClose={() => handleShelfSelect(selectedShelfId, selectedLocation)}
-                      highlightedItemId={highlightedItemId}
-                    />
-                  )}
-                </div>
               </div>
             </div>
           )}
@@ -296,15 +298,17 @@ export default function LocationPage() {
         .shelf-panel,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
         /* Ensure consistent shelf sizing */
         .shelf-panel{display:flex;flex-direction:column;min-height:200px;flex:1 1 calc(33.333% - 20px);max-width:calc(33.333% - 20px);}
+        .shelf-panel.shelf-selected{flex:1 1 60%;max-width:60%}
+        .shelf-panel.shelf-selected .shelf-content{display:flex;gap:20px}
         /* Default shelf state */
         .shelf-default{opacity:1;transform:translateX(0)}
         /* Selected shelf expands, others hide */
         .shelf-selected{opacity:1;transform:translateX(0) scale(1);)}
         .shelf-hidden{flex:0 0 0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
-        /* Stock cards panel */
-        .panel-right{order:99;flex:0;width:0;opacity:0;transform:translateX(100%);overflow:hidden}
-        .panel-right.slide-in-right{opacity:1;transform:translateX(0);flex:1;width:auto;overflow:visible}
-        .panel-right.slide-out-right{opacity:0;transform:translateX(100%);flex:0;width:0;overflow:hidden}
+        /* Stock cards in split layout */
+        .shelf-content{width:100%}
+        .shelf-content > div:first-child{min-width:300px}
+        .shelf-content > div:last-child{border-left:1px solid var(--border);padding-left:20px}
         input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
