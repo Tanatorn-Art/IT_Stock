@@ -84,9 +84,10 @@ jspm_packages/
 .nuxt
 dist
 
+
 # Gatsby files
 .cache/
-# public
+public
 
 # Vuepress build output
 .vuepress/dist
@@ -142,3 +143,12 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# Database
+database.sqlite
+*.sqlite
+
+# Public folder - keep essential images, ignore uploads
+public/images/temp-*
+public/images/upload-*
+public/images/*.webp
