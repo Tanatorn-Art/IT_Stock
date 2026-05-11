@@ -11,6 +11,7 @@
     "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
+    "better-sqlite3": "^12.9.0",
     "formidable": "^3.5.1",
     "jsbarcode": "^3.11.6",
     "lucide-react": "^1.8.0",

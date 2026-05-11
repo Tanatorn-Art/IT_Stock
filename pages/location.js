@@ -163,7 +163,7 @@ export default function LocationPage() {
             <div style={navbarNav}>
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(true)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
-              <Link href="" className="nav-link" style={navItem(false)}><Scan size={16} /> ยืม & เบิก อุปกรณ์ ( Develop )</Link>
+              <Link href="/borrow" className="nav-link" style={navItem(false)}><Scan size={16} /> ยืม & เบิก อุปกรณ์ ( Develop )</Link>
               {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" /> */}
             </div>
             <div style={navbarRight}>
@@ -307,8 +307,8 @@ export default function LocationPage() {
         .shelf-hidden{flex:0 0 0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
         /* Stock cards in split layout */
         .shelf-content{width:100%}
-        .shelf-content > div:first-child{min-width:300px}
-        .shelf-content > div:last-child{border-left:1px solid var(--border);padding-left:20px}
+        .shelf-content div:first-child{min-width:300px}
+        .shelf-content div:last-child{border-left:1px solid var(--border);padding-left:20px}
         input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
