@@ -17,12 +17,15 @@ export default async function handler(req, res) {
       const existing = database.prepare(`SELECT * FROM requisitions WHERE id = ?`).get(id)
       if (!existing) return res.status(404).json({ error: 'Not found' })
 
-      const fields = Object.keys(req.body).map(k => `${k} = ?`).join(', ')
-      const values = Object.values(req.body)
-      database.prepare(`UPDATE requisitions SET ${fields} WHERE id = ?`).run(...values, id)
+      // Handle receive return functionality
+      if (existing.status === 'pending') {
+        database.prepare(`UPDATE requisitions SET status = 'completed' WHERE id = ?`).run(id)
 
-      const updated = database.prepare(`SELECT * FROM requisitions WHERE id = ?`).get(id)
-      return res.status(200).json(updated)
+        const updated = database.prepare(`SELECT * FROM requisitions WHERE id = ?`).get(id)
+        return res.status(200).json(updated)
+      }
+
+      return res.status(400).json({ error: 'Requisition cannot be processed' })
     }
 
     if (method === 'DELETE') {

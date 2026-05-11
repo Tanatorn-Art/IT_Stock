@@ -9,18 +9,23 @@ export default async function handler(req, res) {
       const database = getDatabase()
       const existing = database.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
       if (!existing) return res.status(404).json({ error: 'Not found' })
-      if (existing.status === 'returned') {
+      if (existing.status === 'คืนแล้ว') {
         return res.status(400).json({ error: 'Already returned' })
       }
 
+      const { returnQty } = req.body
+      const newQty = existing.qty - returnQty
+      const newStatus = newQty <= 0 ? 'คืนแล้ว' : 'active'
+
       const returnDate = new Date().toISOString().slice(0, 10)
-      database.prepare(`UPDATE borrows SET status = 'returned', updatedAt = datetime('now') WHERE id = ?`).run(id)
+      database.prepare(`UPDATE borrows SET qty = ?, status = ?, updatedAt = datetime('now') WHERE id = ?`).run(newQty, newStatus, id)
 
       // log to activity
+      const actionType = newQty <= 0 ? 'คืนเต็มจำนวน' : `คืนบางส่วน ${returnQty} ชิ้น`
       database.prepare(`
         INSERT INTO activity_logs (category, level, message, metadata, timestamp)
-        VALUES ('borrow', 'normal', ?, ?, datetime('now'))
-      `).run(`Item returned: ${existing.borrower} คืน ${existing.item} × ${existing.qty}`, JSON.stringify({borrowId: id, borrower: existing.borrower, item: existing.item, qty: existing.qty}))
+          VALUES ('borrow', 'normal', ?, ?, datetime('now'))
+      `).run(`Item returned: ${existing.borrower} ${actionType} ${existing.item}`, JSON.stringify({borrowId: id, borrower: existing.borrower, item: existing.item, returnQty, newQty, newStatus}))
 
       const updated = database.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
       return res.status(200).json(updated)

@@ -13,16 +13,57 @@ export default async function handler(req, res) {
     }
 
     if (method === 'PATCH') {
-      const database = getDatabase()
-      const existing = database.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
+      const db = getDatabase()
+      const existing = db.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
       if (!existing) return res.status(404).json({ error: 'Not found' })
 
-      const fields  = Object.keys(req.body).map(k => `${k} = ?`).join(', ')
-      const values  = Object.values(req.body)
-      database.prepare(`UPDATE borrows SET ${fields} WHERE id = ?`).run(...values, id)
+      // Handle return functionality
+      if (req.body.returnQty !== undefined) {
+        const { returnQty } = req.body
 
-      const updated = database.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
-      return res.status(200).json(updated)
+        try {
+          const newQty = existing.qty - returnQty
+          const newStatus = newQty <= 0 ? 'returned' : 'active'
+
+          const updateStmt = db.prepare(`UPDATE borrows SET qty = ?, status = ? WHERE id = ?`)
+          updateStmt.run(newQty, newStatus, id)
+
+          const updated = db.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
+          return res.status(200).json(updated)
+        } catch (dbError) {
+          console.error('Database error in return logic:', dbError)
+          return res.status(500).json({ error: 'Database error: ' + dbError.message })
+        }
+      }
+
+      return res.status(400).json({ error: 'Invalid request body' })
+    }
+
+    if (method === 'PUT') {
+      const db = getDatabase()
+      const existing = db.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
+      if (!existing) return res.status(404).json({ error: 'Not found' })
+
+      // Handle return functionality
+      if (req.body.returnQty !== undefined) {
+        const { returnQty } = req.body
+
+        try {
+          const newQty = existing.qty - returnQty
+          const newStatus = newQty <= 0 ? 'returned' : 'active'
+
+          const updateStmt = db.prepare(`UPDATE borrows SET qty = ?, status = ? WHERE id = ?`)
+          updateStmt.run(newQty, newStatus, id)
+
+          const updated = db.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
+          return res.status(200).json(updated)
+        } catch (dbError) {
+          console.error('Database error in return logic:', dbError)
+          return res.status(500).json({ error: 'Database error: ' + dbError.message })
+        }
+      }
+
+      return res.status(400).json({ error: 'Invalid request body' })
     }
 
     if (method === 'DELETE') {

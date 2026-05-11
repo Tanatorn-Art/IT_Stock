@@ -203,7 +203,9 @@ export default function LocationPage() {
                     onClick={handleGenerateLocations}
                     title="สร้างตำแหน่งที่ขาดหาย"
                     style={{
-                      background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text2)',
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border2)',
+                      color: 'var(--text2)',
                       borderRadius: 6, width: 30, height: 30, cursor: 'pointer', fontSize: 13,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -214,7 +216,9 @@ export default function LocationPage() {
                     onClick={() => setShowConfigEditor(true)}
                     title="ตั้งค่าชั้นวาง"
                     style={{
-                      background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text2)',
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border2)',
+                      color: 'var(--text2)',
                       borderRadius: 6, width: 30, height: 30, cursor: 'pointer', fontSize: 13,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -308,7 +312,7 @@ export default function LocationPage() {
         /* Stock cards in split layout */
         .shelf-content{width:100%}
         .shelf-content div:first-child{min-width:300px}
-        .shelf-content div:last-child{border-left:1px solid var(--border);padding-left:20px}
+        // .shelf-content div:last-child{border-left:1px solid var(--border);padding-left:20px}
         input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -356,7 +360,7 @@ function LocationStockCards({ location, stockItems, onClose, highlightedItemId }
           color: 'var(--text3)',
           background: 'var(--surface)',
           borderRadius: 12,
-          border: '1px dashed var(--border)'
+          border: '1px solid #ffffff'
         }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
           <div style={{ fontSize: 14 }}>ไม่มีรายการ stock ในตำแหน่งนี้</div>
@@ -368,7 +372,7 @@ function LocationStockCards({ location, stockItems, onClose, highlightedItemId }
           gap: 12,
           maxHeight: 480,
           overflowY: 'auto',
-          paddingRight: 4
+          padding: 4
         }}>
           {stockItems.map(item => (
             <MinimalStockCard
@@ -389,7 +393,6 @@ const MinimalStockCard = memo(function MinimalStockCard({ item, highlighted }) {
   return (
     <div style={{
       background: highlighted ? '#dbeafe' : 'var(--surface)',
-      border: highlighted ? '2px solid #2563eb' : `1px solid ${low ? 'var(--warning)' : 'var(--border)'}`,
       borderRadius: 10,
       padding: 10,
       transition: 'all .2s ease',
@@ -402,7 +405,7 @@ const MinimalStockCard = memo(function MinimalStockCard({ item, highlighted }) {
           alt={item.name}
           style={{
             width: '100%',
-            height: 100,
+            height: 300,
             objectFit: 'cover',
             borderRadius: 6,
             marginBottom: 8
