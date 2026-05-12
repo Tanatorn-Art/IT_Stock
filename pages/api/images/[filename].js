@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const imagePath = join('C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image', filename);
+    const imagePath = join('C:\\inetpub\\wwwroot\\IT-Stock-Dev-2026\\IT_stock\\data\\image', filename);
     console.log('Looking for file:', imagePath);
 
     const fileStats = await stat(imagePath);
