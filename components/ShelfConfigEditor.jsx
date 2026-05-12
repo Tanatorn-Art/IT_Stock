@@ -186,7 +186,7 @@ function ShelfEditor({ shelf, onChange, onDelete }) {
             <label style={{ display: 'block', fontSize: 10, color: 'var(--text3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.8 }}>ความกว้างคอลัมน์ (colW)</label>
             <input
               type="number"
-              min={50}
+              min={60}
               max={800}
               value={shelf.colW}
               onChange={e => update('colW', parseInt(e.target.value) || 90)}

@@ -195,7 +195,7 @@ export default function ShelfMap({ shelfId, config, locations = [], selectedLoca
   const selectedKey = getSelectedKey()
 
   return (
-    <div style={{ marginTop: 20 }}>
+    <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{shelf.name || shelf.id}</div>
         <div style={{ display: 'flex', gap: 16 }}>

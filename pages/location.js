@@ -75,7 +75,6 @@ export default function LocationPage() {
       const locName = decodeURIComponent(router.query.loc)
       const foundLoc = locations.find(l => l.name === locName)
       if (foundLoc) {
-        // Use location.shelfId if available, otherwise match by regex
         let shelfId = foundLoc.shelfId
         if (!shelfId) {
           const matchedShelf = shelfConfig.shelves.find(s => {
@@ -89,7 +88,6 @@ export default function LocationPage() {
     }
   }, [loading, locations, shelfConfig, router.query.loc])
 
-  // Get highlighted item ID from query
   const highlightedItemId = router.query.item ? decodeURIComponent(router.query.item) : null
 
   const handleSave = useCallback(async (saved) => {
@@ -144,7 +142,6 @@ export default function LocationPage() {
     } catch { alert('เกิดข้อผิดพลาดในการสร้างตำแหน่ง') }
   }, [fetchLocations, showToast])
 
-  // Get stock items for selected location
   const locationStockItems = selectedLocation
     ? stockItems.filter(item => item.location === selectedLocation.name)
     : []
@@ -159,12 +156,11 @@ export default function LocationPage() {
       <div style={layout}>
         {/* Navbar */}
         <nav style={navbar}>
-          <div style={{maxWidth:1400,margin:'0 auto',width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={navbarNav}>
               <Link href="/" className="nav-link" style={navItem(false)}><Package size={16} /> Stock รายการ</Link>
               <Link href="/location" className="nav-link" style={navItem(true)}><MapPin size={16} /> จัดการตำแหน่ง</Link>
               <Link href="/borrow" className="nav-link" style={navItem(false)}><Scan size={16} /> ยืม & เบิก อุปกรณ์ ( Develop )</Link>
-              {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" /> */}
             </div>
             <div style={navbarRight}>
               <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="location" />
@@ -192,10 +188,12 @@ export default function LocationPage() {
               flexDirection: 'column',
               alignItems: 'center',
               width: '100%',
-              gap: '20px',
-              padding: '10px',
-              marginTop: '-20px'
+              gap: '12px',
+              padding: '0 10px',
+              height: '100%',
+              minHeight: 0,
             }}>
+              {/* Header row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>จัดการตำแหน่งเก็บของ</div>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -227,8 +225,9 @@ export default function LocationPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Panels */}
               <div className={`panels-wrapper ${pageLoaded ? 'slide-up' : ''}`}>
-                {/* Dynamic shelf panels */}
                 {shelfConfig?.shelves?.map((shelf, idx) => {
                   const isSelected = selectedShelfId === shelf.id
                   const isHidden = selectedShelfId && selectedShelfId !== shelf.id
@@ -236,10 +235,10 @@ export default function LocationPage() {
                     <div
                       key={shelf.id}
                       className={`shelf-panel ${isSelected ? 'shelf-selected' : isHidden ? 'shelf-hidden' : 'shelf-default'}`}
-                      style={{ order: idx + 1 }}
+                      style={{ order: isSelected ? 0 : idx + 1 }}  // ← เปลี่ยนตรงนี้
                     >
                       <div className="shelf-content">
-                        <div style={{ flex: 1 }}>
+                        <div className="shelf-map-col">
                           <ShelfMap
                             shelfId={shelf.id}
                             config={shelfConfig}
@@ -249,7 +248,7 @@ export default function LocationPage() {
                           />
                         </div>
                         {isSelected && selectedLocation && (
-                          <div style={{ flex: 1, maxWidth: '400px' }}>
+                          <div className="shelf-detail-col">
                             <LocationStockCards
                               location={selectedLocation}
                               stockItems={locationStockItems}
@@ -268,7 +267,6 @@ export default function LocationPage() {
         </main>
       </div>
 
-      {/* Modals — rendered via portal-like pattern, only when needed */}
       {formItem !== undefined && (
         <LocationForm location={formItem} shelfConfig={shelfConfig} onSave={handleSave} onClose={() => setFormItem(undefined)} />
       )}
@@ -295,24 +293,92 @@ export default function LocationPage() {
         @keyframes toast-in{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes modal-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-        /* Initial page load animation - must be first */
-        .panels-wrapper{display:flex;flex-wrap:wrap;justify-content:center;width:100%;gap:20px;position:relative;opacity:0;transform:translateY(20px)}
-        .panels-wrapper.slide-up{opacity:1;transform:translateY(0);transition:opacity .5s ease,transform .5s cubic-bezier(0.4,0,0.2,1)}
-        /* Panel transitions */
-        .shelf-panel,.panel-right{transition:all .4s cubic-bezier(0.4,0,0.2,1);min-width:0}
-        /* Ensure consistent shelf sizing */
-        .shelf-panel{display:flex;flex-direction:column;min-height:200px;flex:1 1 calc(33.333% - 20px);max-width:calc(33.333% - 20px);}
-        .shelf-panel.shelf-selected{flex:1 1 60%;max-width:60%;max-height:350px}
-        .shelf-panel.shelf-selected .shelf-content{display:flex;gap:20px}
-        /* Default shelf state */
-        .shelf-default{opacity:1;transform:translateX(0)}
-        /* Selected shelf expands, others hide */
-        .shelf-selected{opacity:1;transform:translateX(0) scale(1);)}
-        .shelf-hidden{flex:0 0 0;width:0;opacity:0;overflow:hidden;padding:0;margin:0;transform:translateX(-20px) scale(0.95);pointer-events:none}
-        /* Stock cards in split layout */
-        .shelf-content{width:100%}
-        .shelf-content div:first-child{min-width:300px}
-        // .shelf-content div:last-child{border-left:1px solid var(--border);padding-left:20px}
+
+        /* Panels wrapper */
+        .panels-wrapper {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 100%;
+          gap: 20px;
+          position: relative;
+          opacity: 0;
+          transform: translateY(20px);
+          align-items: flex-start;
+        }
+        .panels-wrapper.slide-up {
+          opacity: 1;
+          transform: translateY(0);
+          transition: opacity .5s ease, transform .5s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        /* Default shelf panel — 3 columns */
+        .shelf-panel {
+          display: flex;
+          flex-direction: column;
+          flex: 1 1 calc(33.333% - 20px);
+          max-width: calc(33.333% - 20px);
+          min-width: 0;
+          transition: flex .3s cubic-bezier(0.4,0,0.2,1),
+                      max-width .3s cubic-bezier(0.4,0,0.2,1),
+                      opacity .3s ease,
+                      transform .3s cubic-bezier(0.4,0,0.2,1);
+          overflow: hidden;
+        }
+
+        /* Selected shelf takes full row */
+        .shelf-panel.shelf-selected {
+          flex: 1 1 100%;
+          max-width: 100%;
+          height: calc(100vh - 130px);
+          min-height: 0;
+          overflow: hidden;
+        }
+
+        /* shelf-content layout */
+        .shelf-content {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          gap: 20px;
+          align-items: stretch;
+        }
+
+        /* Map column: fixed width, scrolls internally if needed */
+        .shelf-map-col {
+          width: 600px;
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+
+        /* Detail column: takes remaining space, scrolls internally */
+        .shelf-detail-col {
+          flex: 1 1 0;
+          min-width: 0;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          border-left: 1px solid var(--border);
+          padding-left: 20px;
+        }
+
+        /* Hidden shelves collapse away */
+        .shelf-hidden {
+          flex: 0 0 0 !important;
+          width: 0 !important;
+          opacity: 0;
+          overflow: hidden;
+          padding: 0;
+          margin: 0;
+          transform: translateX(-20px) scale(0.95);
+          pointer-events: none;
+        }
+
+        .shelf-default {
+          opacity: 1;
+          transform: translateX(0);
+        }
+
         input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
         button:active{transform:scale(.97)}
         .card:hover{border-color:var(--border2)!important;background:var(--surface2)!important;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -323,166 +389,106 @@ export default function LocationPage() {
   )
 }
 
-/* ── LocationStockCards: displays stock items for selected location ── */
+/* ── LocationStockCards ── */
 function LocationStockCards({ location, stockItems, onClose, highlightedItemId }) {
   return (
-    <div style={{ marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: 8 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexShrink: 0 }}>
         <div>
           <div style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'var(--mono)', marginBottom: 4 }}>
             รายการ Stock ในตำแหน่ง
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>{location.name}</div>
         </div>
-        {/* <button
-          onClick={() => onClose(null)}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--text2)',
-            borderRadius: 8,
-            padding: '6px 12px',
-            fontSize: 12,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4
-          }}
-        >
-          ✕ ปิด
-        </button> */}
       </div>
 
+      {/* Scrollable cards */}
       {stockItems.length === 0 ? (
         <div style={{
-          padding: 40,
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           textAlign: 'center',
           color: 'var(--text3)',
           background: 'var(--surface)',
           borderRadius: 12,
-          border: '1px solid #ffffff'
+          border: '1px solid var(--border)',
         }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
           <div style={{ fontSize: 14 }}>ไม่มีรายการ stock ในตำแหน่งนี้</div>
         </div>
       ) : (
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-          gap: 12,
-          maxHeight: 480,
+          flex: 1,
           overflowY: 'auto',
-          padding: 4
+          minHeight: 0,
         }}>
-          {stockItems.map(item => (
-            <MinimalStockCard
-              key={item.id}
-              item={item}
-              highlighted={highlightedItemId === item.id}
-            />
-          ))}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: 12,
+            padding: '4px 4px 8px 4px',
+            alignContent: 'start',
+          }}>
+            {stockItems.map(item => (
+              <MinimalStockCard
+                key={item.id}
+                item={item}
+                highlighted={highlightedItemId === item.id}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-/* ── MinimalStockCard: compact card for location view ── */
+/* ── MinimalStockCard ── */
 const MinimalStockCard = memo(function MinimalStockCard({ item, highlighted }) {
   const low = item.quantity <= item.minQuantity
   return (
     <div style={{
       background: highlighted ? '#dbeafe' : 'var(--surface)',
-      borderRadius: 10,
-      padding: 10,
+      borderRadius: 12,
+      padding: 12,
       transition: 'all .2s ease',
       cursor: 'default',
-      boxShadow: highlighted ? '0 0 0 4px rgba(37, 99, 235, 0.2)' : 'none'
+      boxShadow: highlighted ? '0 0 0 4px rgba(37, 99, 235, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+      border: highlighted ? '2px solid #3b82f6' : '1px solid var(--border)',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       {item.image ? (
         <img
           src={item.image}
           alt={item.name}
-          style={{
-            width: '100%',
-            height: 300,
-            objectFit: 'cover',
-            borderRadius: 6,
-            marginBottom: 8
-          }}
+          style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
         />
       ) : (
         <div style={{
-          width: '100%',
-          height: 100,
-          background: 'var(--surface2)',
-          borderRadius: 6,
-          marginBottom: 8,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 24
-        }}>
-          📦
-        </div>
+          width: '100%', height: 100,
+          background: 'var(--surface2)', borderRadius: 8, marginBottom: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
+        }}>📦</div>
       )}
+      <div style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--mono)', marginBottom: 2 }}>{item.id}</div>
       <div style={{
-        fontSize: 10,
-        color: 'var(--accent)',
-        fontFamily: 'var(--mono)',
-        marginBottom: 2
-      }}>
-        {item.id}
-      </div>
-      <div style={{
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--text)',
-        marginBottom: 4,
-        lineHeight: 1.3,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap'
-      }}>
-        {item.name}
-      </div>
-      <div style={{
-        fontSize: 11,
-        color: 'var(--text3)',
-        marginBottom: 6
-      }}>
-        {item.brand}
-      </div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <span style={{
-          fontSize: 10,
-          color: 'var(--text3)'
-        }}>
-          {item.category}
-        </span>
-        <span style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: low ? 'var(--warning)' : 'var(--success)',
-          fontFamily: 'var(--mono)'
-        }}>
+        fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4,
+        lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{item.name}</div>
+      <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6 }}>{item.brand}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 10, color: 'var(--text3)' }}>{item.category}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: low ? 'var(--warning)' : 'var(--success)', fontFamily: 'var(--mono)' }}>
           {item.quantity} ชิ้น
         </span>
       </div>
       {low && (
-        <div style={{
-          marginTop: 6,
-          padding: '4px 8px',
-          background: '#fef3c7',
-          borderRadius: 4,
-          fontSize: 10,
-          color: '#92400e',
-          textAlign: 'center'
-        }}>
+        <div style={{ marginTop: 6, padding: '4px 8px', background: '#fef3c7', borderRadius: 4, fontSize: 10, color: '#92400e', textAlign: 'center' }}>
           ⚠️ ใกล้หมด
         </div>
       )}
@@ -490,7 +496,7 @@ const MinimalStockCard = memo(function MinimalStockCard({ item, highlighted }) {
   )
 })
 
-/* ── memo: prevent re-render when parent state changes ── */
+/* ── LocationCard ── */
 const LocationCard = memo(function LocationCard({ location, onEdit, onDelete, onView }) {
   return (
     <div className="card" style={cardSt} onClick={onView}>
@@ -506,21 +512,14 @@ const LocationCard = memo(function LocationCard({ location, onEdit, onDelete, on
   )
 })
 
-// ── Upload queue item shape:
-// { id, file, name, status: 'pending'|'reading'|'uploading'|'done'|'error', preview, path, progress }
-
+/* ── Upload queue ── */
 function queueReducer(state, action) {
   switch (action.type) {
-    case 'ADD':
-      return [...state, ...action.items]
-    case 'UPDATE':
-      return state.map(item => item.id === action.id ? { ...item, ...action.patch } : item)
-    case 'REMOVE':
-      return state.filter(item => item.id !== action.id)
-    case 'CLEAR':
-      return []
-    default:
-      return state
+    case 'ADD': return [...state, ...action.items]
+    case 'UPDATE': return state.map(item => item.id === action.id ? { ...item, ...action.patch } : item)
+    case 'REMOVE': return state.filter(item => item.id !== action.id)
+    case 'CLEAR': return []
+    default: return state
   }
 }
 
@@ -534,25 +533,18 @@ function useUploadQueue() {
     if (processingRef.current) return
     const next = queueRef.current.find(i => i.status === 'pending')
     if (!next) return
-
     processingRef.current = true
-
     try {
-      // Step 1: Read file
       dispatch({ type: 'UPDATE', id: next.id, patch: { status: 'reading', progress: 0 } })
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result)
         reader.onerror = reject
         reader.onprogress = (e) => {
-          if (e.lengthComputable) {
-            dispatch({ type: 'UPDATE', id: next.id, patch: { progress: Math.round((e.loaded / e.total) * 40) } })
-          }
+          if (e.lengthComputable) dispatch({ type: 'UPDATE', id: next.id, patch: { progress: Math.round((e.loaded / e.total) * 40) } })
         }
         reader.readAsDataURL(next.file)
       })
-
-      // Step 2: Upload
       dispatch({ type: 'UPDATE', id: next.id, patch: { status: 'uploading', progress: 50 } })
       const filename = `${Date.now()}-${next.file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`
       const res = await fetch('/api/upload', {
@@ -563,12 +555,10 @@ function useUploadQueue() {
       if (!res.ok) throw new Error('Upload failed')
       const data = await res.json()
       dispatch({ type: 'UPDATE', id: next.id, patch: { status: 'done', progress: 100, path: data.path } })
-
     } catch {
       dispatch({ type: 'UPDATE', id: next.id, patch: { status: 'error', progress: 0 } })
     } finally {
       processingRef.current = false
-      // Schedule next tick so queueRef has time to update
       setTimeout(() => processNext(), 0)
     }
   }, [])
@@ -576,23 +566,15 @@ function useUploadQueue() {
   const addFiles = useCallback((files) => {
     const items = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      file,
-      name: file.name,
-      status: 'pending',
-      preview: URL.createObjectURL(file),
-      path: null,
-      progress: 0,
+      file, name: file.name, status: 'pending',
+      preview: URL.createObjectURL(file), path: null, progress: 0,
     }))
     dispatch({ type: 'ADD', items })
-    // Kick off processing after state settles
     setTimeout(() => processNext(), 0)
     return items
   }, [processNext])
 
-  const remove = useCallback((id) => {
-    dispatch({ type: 'REMOVE', id })
-  }, [])
-
+  const remove = useCallback((id) => dispatch({ type: 'REMOVE', id }), [])
   const retry = useCallback((id) => {
     dispatch({ type: 'UPDATE', id, patch: { status: 'pending', progress: 0 } })
     setTimeout(() => processNext(), 0)
@@ -600,20 +582,23 @@ function useUploadQueue() {
 
   const isProcessing = queue.some(i => i.status === 'reading' || i.status === 'uploading')
   const hasPending = queue.some(i => i.status === 'pending')
-
   return { queue, addFiles, remove, retry, isProcessing, hasPending }
 }
 
 function UploadQueue({ queue, onRemove, onRetry }) {
   if (queue.length === 0) return null
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+    <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        marginTop: 8,
+        height: '100%',
+        minHeight: 0,
+       }}>
       {queue.map(item => (
         <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface2)', borderRadius: 8, padding: '6px 8px', border: '1px solid var(--border)' }}>
-          {/* Thumbnail */}
           <img src={item.preview} alt={item.name} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
-
-          {/* Info + bar */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
             <div style={{ fontSize: 10, color: statusColor(item.status), marginBottom: 3 }}>{statusLabel(item.status)}</div>
@@ -623,8 +608,6 @@ function UploadQueue({ queue, onRemove, onRetry }) {
               </div>
             )}
           </div>
-
-          {/* Actions */}
           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
             {item.status === 'error' && (
               <button onClick={() => onRetry(item.id)} title="ลองใหม่" style={{ background: 'transparent', border: '1px solid var(--border2)', color: 'var(--text2)', borderRadius: 5, width: 24, height: 24, cursor: 'pointer', fontSize: 11 }}>↺</button>
@@ -646,6 +629,7 @@ function statusColor(s) {
   return { done: 'var(--success)', error: 'var(--danger)', reading: 'var(--accent)', uploading: 'var(--accent)', pending: 'var(--text3)' }[s] ?? 'var(--text3)'
 }
 
+/* ── LocationForm ── */
 function LocationForm({ location, shelfConfig, onSave, onClose }) {
   const isEdit = !!location
   const [name, setName] = useState(location?.name || '')
@@ -681,21 +665,15 @@ function LocationForm({ location, shelfConfig, onSave, onClose }) {
           </div>
           <button onClick={onClose} style={XB}>✕</button>
         </div>
-
         <div style={GR}>
           <div style={{ gridColumn: '1/-1' }}>
             <F label="ชื่อตำแหน่ง *" err={nameErr}>
               <input style={I(nameErr)} value={name} onChange={e => { setName(e.target.value); if (nameErr) setNameErr('') }} placeholder="เช่น ชั้น A-1" />
             </F>
           </div>
-
           <div style={{ gridColumn: '1/-1' }}>
             <F label="ชั้นวาง (Shelf)">
-              <select
-                style={I()}
-                value={shelfId || ''}
-                onChange={e => setShelfId(e.target.value || null)}
-              >
+              <select style={I()} value={shelfId || ''} onChange={e => setShelfId(e.target.value || null)}>
                 <option value="">-- อัตโนมัติจากชื่อ --</option>
                 {shelfConfig?.shelves?.map(shelf => (
                   <option key={shelf.id} value={shelf.id}>
@@ -705,14 +683,12 @@ function LocationForm({ location, shelfConfig, onSave, onClose }) {
               </select>
             </F>
           </div>
-
           <div style={{ gridColumn: '1/-1' }}>
             <F label="รายละเอียด">
               <textarea style={{ ...I(), resize: 'vertical', minHeight: 60 }} value={description} onChange={e => setDescription(e.target.value)} placeholder="รายละเอียดเพิ่มเติม..." />
             </F>
           </div>
         </div>
-
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={CB}>ยกเลิก</button>
           <button onClick={handleSubmit} disabled={saving} style={{ ...SB, opacity: saving ? 0.7 : 1 }}>
@@ -724,6 +700,7 @@ function LocationForm({ location, shelfConfig, onSave, onClose }) {
   )
 }
 
+/* ── DelModal ── */
 function DelModal({ item, onConfirm, onClose }) {
   return (
     <div style={OV} onClick={onClose}>
@@ -743,20 +720,18 @@ function DelModal({ item, onConfirm, onClose }) {
   )
 }
 
-/* ── ViewModal: fetch stock lazily, not on every render ── */
+/* ── ViewModal ── */
 function ViewModal({ location, onClose }) {
-  const [stockItems, setStockItems] = useState(null) // null = not loaded yet
+  const [stockItems, setStockItems] = useState(null)
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/stock')
       .then(r => r.json())
-      .then(all => {
-        if (!cancelled) setStockItems(all.filter(i => i.location === location.name))
-      })
+      .then(all => { if (!cancelled) setStockItems(all.filter(i => i.location === location.name)) })
       .catch(() => { if (!cancelled) setStockItems([]) })
     return () => { cancelled = true }
-  }, [location.name]) // only re-fetch if location name changes
+  }, [location.name])
 
   return (
     <div style={OV} onClick={onClose}>
@@ -810,7 +785,6 @@ function ViewModal({ location, onClose }) {
   )
 }
 
-/* ── extracted + memoised to avoid re-rendering the whole list ── */
 const StockMiniCard = memo(function StockMiniCard({ item }) {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
@@ -860,21 +834,16 @@ function F({ label, children, err }) {
 }
 
 // ── styles ──
-const layout = { display: 'flex', flexDirection: 'column', minHeight: '100vh' }
-const navbar = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', position: 'sticky', top: 0, zIndex: 100, width: '100%', backgroundImage: 'url(/images/bg_navbar.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }
-const navbarLeft = { display: 'flex', alignItems: 'center', gap: 10 }
+const layout = { display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }
+const navbar = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', position: 'sticky', top: 0, zIndex: 100, width: '100%', backgroundImage: 'url(/images/bg_navbar.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }
 const navbarNav = { display: 'flex', alignItems: 'center', gap: 4 }
 const navbarRight = { display: 'flex', alignItems: 'center', gap: 12 }
-const logoBox = { width: 34, height: 34, background: 'var(--accent)', color: '#000', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 12, letterSpacing: 1 }
 const navItem = (a) => ({ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, fontSize: 13, color: '#ffffff', background: a ? 'var(--accent-glow)' : 'transparent', border: a ? '1px solid rgba(0,212,255,.2)' : '1px solid transparent', fontWeight: a ? 600 : 400, transition: 'all .15s', cursor: 'pointer' })
-const mainArea = { flex: 1, padding: 24, minWidth: 0, overflowX: 'hidden'}
-const toolbar = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-5px' }
+const mainArea = { flex: 1, padding: '12px 24px', minWidth: 0, overflowX: 'hidden', overflowY: 'auto', minHeight: 0 }
 const addBtn = { background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--sans)', whiteSpace: 'nowrap' }
 const centerBox = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, gap: 12 }
 const spinner = { width: 34, height: 34, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin .8s linear infinite' }
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }
 const cardSt = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 11, padding: 14, transition: 'all .2s ease', animation: 'fadein .3s ease', cursor: 'default' }
-// ── overlay: removed backdropFilter blur (biggest perf culprit) ──
 const OV = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, overflowY: 'auto' }
 const MO = { background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 16, padding: 26, width: '100%', maxWidth: 560, boxShadow: '0 24px 60px rgba(0,0,0,0.6)', animation: 'modal-in .18s ease' }
 const HDR = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }
