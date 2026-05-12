@@ -28,7 +28,7 @@ const STATUS_CONFIG = {
   active:   { label: 'ยืมอยู่',      bg: '#EAF3DE', color: '#3B6D11' },
   overdue:  { label: 'เกินกำหนด',   bg: '#FCEBEB', color: '#A32D2D' },
   returned: { label: 'คืนแล้ว',     bg: '#E6F1FB', color: '#185FA5' },
-  pending:  { label: 'รอดำเนินการ', bg: '#FAEEDA', color: '#854F0B' },
+  pending:  { label: 'ใช้อยู่', bg: '#DEFFEB', color: '#04632B' },
   approved: { label: 'อนุมัติแล้ว', bg: '#EAF3DE', color: '#3B6D11' },
   rejected: { label: 'ปฏิเสธ',      bg: '#FCEBEB', color: '#A32D2D' },
   completed: { label: 'รับคืนแล้ว', bg: '#E6F1FB', color: '#185FA5' },
@@ -117,12 +117,21 @@ function ItemPickerPanel({ stockItems, form, setForm }) {
   const searchTerm = itemSearch.toLowerCase().trim()
   const filteredItems = stockItems.filter(item =>
     !item.disabled &&
-    item.quantity > 0 &&
     (item.name.toLowerCase().includes(searchTerm) ||
     (item.brand && item.brand.toLowerCase().includes(searchTerm)) ||
     (item.model && item.model.toLowerCase().includes(searchTerm)) ||
     (item.category && item.category.toLowerCase().includes(searchTerm)))
-  )
+  ).sort((a, b) => {
+    // Sort in-stock items first, out-of-stock items last
+    const aOutOfStock = a.quantity <= 0
+    const bOutOfStock = b.quantity <= 0
+
+    if (aOutOfStock && !bOutOfStock) return 1  // a is out of stock, put it after b
+    if (!aOutOfStock && bOutOfStock) return -1 // b is out of stock, put it after a
+
+    // If both have same stock status, sort by name
+    return a.name.localeCompare(b.name, 'th')
+  })
 
   return (
     <>
@@ -144,19 +153,21 @@ function ItemPickerPanel({ stockItems, form, setForm }) {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
-        {filteredItems.map(item => (
+        {filteredItems.map(item => {
+          const isOutOfStock = item.quantity <= 0
+          return (
           <div
             key={item.id}
-            onClick={() => setForm(prev => ({ ...prev, item: item.name, qty: 1 }))}
+            onClick={() => !isOutOfStock && setForm(prev => ({ ...prev, item: item.name, qty: 1 }))}
             style={{
-              background: form.item === item.name ? 'var(--accent-glow)' : 'rgba(255,255,255,0.85)',
-              border: form.item === item.name ? '2px solid var(--accent)' : '1px solid var(--border)',
-              borderRadius: 10, padding: 12, cursor: 'pointer', transition: 'all .2s ease',
+              background: form.item === item.name ? 'var(--accent-glow)' : (isOutOfStock ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.85)'),
+              border: form.item === item.name ? '2px solid var(--accent)' : (isOutOfStock ? '1px solid #ccc' : '1px solid var(--border)'),
+              borderRadius: 10, padding: 12, cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: 'all .2s ease',
               display: 'flex', flexDirection: 'column', position: 'relative',
-              marginTop: 5
+              marginTop: 5, opacity: isOutOfStock ? 0.6 : 1
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+            onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' } }}
+            onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               {item.image ? (
@@ -171,18 +182,24 @@ function ItemPickerPanel({ stockItems, form, setForm }) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 11, color: 'var(--text3)' }}>{item.category}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: form.item === item.name ? 'var(--accent)' : 'var(--text)', fontFamily: 'var(--mono)' }}>{item.quantity} ชิ้น</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: isOutOfStock ? '#999' : (form.item === item.name ? 'var(--accent)' : 'var(--text)'), fontFamily: 'var(--mono)' }}>
+                {item.quantity} ชิ้น
+              </span>
             </div>
-            {item.quantity <= item.minQuantity && (
+            {!isOutOfStock && item.quantity <= item.minQuantity && (
               <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: 'var(--warning)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>ใกล้หมด</div>
             )}
-            {form.item === item.name && (
+            {isOutOfStock && (
+              <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: '#999', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>หมด</div>
+            )}
+            {form.item === item.name && !isOutOfStock && (
               <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 10, background: 'var(--accent)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                 <Check size={9} /> เลือกแล้ว
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
     </>
   )
@@ -487,6 +504,8 @@ export default function BorrowPage() {
           console.error('Error updating stock:', error)
         }
 
+        // Fetch updated stock data after saving
+        await fetchData()
         showToast(tab === 'borrow' ? 'บันทึกรายการยืมเรียบร้อย!' : 'ส่งคำขอเบิกเรียบร้อย!')
         resetForm()
       } else {
@@ -521,6 +540,12 @@ export default function BorrowPage() {
         console.error('Error updating stock:', error)
       }
 
+      // Fetch updated stock data after saving (offline mode)
+      try {
+        await fetchData()
+      } catch (error) {
+        console.error('Error fetching data in offline mode:', error)
+      }
       showToast(tab === 'borrow' ? 'บันทึกรายการยืมเรียบร้อย! (offline)' : 'ส่งคำขอเบิกเรียบร้อย! (offline)')
       resetForm()
     } finally {
@@ -893,14 +918,43 @@ export default function BorrowPage() {
 
                 {/* Item picker */}
                 <div style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, backdropFilter: 'blur(10px)' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Box size={15} color="var(--accent)" />
-                    เลือกอุปกรณ์
-                    {form.item && (
-                      <span style={{ fontSize: 11, background: 'var(--accent)', color: '#fff', padding: '2px 8px', borderRadius: 99, marginLeft: 4 }}>
-                        เลือกแล้ว: {form.item}
-                      </span>
-                    )}
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Box size={15} color="var(--accent)" />
+                      เลือกอุปกรณ์
+                      {form.item && (
+                        <span style={{ fontSize: 11, background: 'var(--accent)', color: '#fff', padding: '2px 8px', borderRadius: 99, marginLeft: 4 }}>
+                          เลือกแล้ว: {form.item}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={fetchData}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        color: 'var(--text2)',
+                        background: 'transparent',
+                        border: '1px solid var(--border)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'var(--surface)'
+                        e.currentTarget.style.color = 'var(--accent)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = 'var(--text2)'
+                      }}
+                    >
+                      <RefreshCw size={14} />
+                      รีเฟรช
+                    </button>
                   </h3>
                   <ItemPickerPanel stockItems={stockItems} form={form} setForm={setForm} />
                 </div>
