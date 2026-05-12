@@ -318,7 +318,7 @@ export default function LocationPage() {
           flex-direction: column;
           flex: 1 1 calc(33.333% - 20px);
           max-width: calc(33.333% - 20px);
-          min-width: 0;
+          min-width: 280px;
           transition: flex .3s cubic-bezier(0.4,0,0.2,1),
                       max-width .3s cubic-bezier(0.4,0,0.2,1),
                       opacity .3s ease,
@@ -346,9 +346,14 @@ export default function LocationPage() {
 
         /* Map column: fixed width, scrolls internally if needed */
         .shelf-map-col {
-          width: 600px;
-          flex-shrink: 0;
+          flex: 0 0 auto;
+          width: clamp(200px, 40%, 550px);
+          min-width: 0;
           overflow: hidden;
+        }
+
+        .shelf-default .shelf-map-col {
+          width: 100%;
         }
 
         /* Detail column: takes remaining space, scrolls internally */
@@ -364,14 +369,7 @@ export default function LocationPage() {
 
         /* Hidden shelves collapse away */
         .shelf-hidden {
-          flex: 0 0 0 !important;
-          width: 0 !important;
-          opacity: 0;
-          overflow: hidden;
-          padding: 0;
-          margin: 0;
-          transform: translateX(-20px) scale(0.95);
-          pointer-events: none;
+          display: none;
         }
 
         .shelf-default {

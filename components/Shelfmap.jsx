@@ -1,3 +1,4 @@
+// components/Shelfmap.js
 import { useCallback } from 'react'
 
 function locKey(col, row) {
@@ -9,7 +10,6 @@ function buildMap(locations, nameMatch) {
   locations.forEach(loc => {
     let col = loc.col
     let row = loc.row
-
     if (!col || !row) {
       const match = (loc.name || '').match(nameMatch)
       if (match) {
@@ -17,7 +17,6 @@ function buildMap(locations, nameMatch) {
         row = parseInt(match[2])
       }
     }
-
     if (col && row) {
       map[locKey(col, parseInt(row))] = loc
     }
@@ -33,8 +32,10 @@ function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
   const BEAM_H = defaults.beamH
   const UPRIGHT_W = defaults.uprightW
   const PAD = defaults.pad
-  const X0 = defaults.x0
-  const Y0 = defaults.y0
+  const LABEL_W = 28   // row label column width
+  const HEADER_H = 20  // col header row height
+  const X0 = LABEL_W
+  const Y0 = HEADER_H
 
   const BEAM_COLOR = defaults.beamColor
   const UPRIGHT_COLOR = defaults.uprightColor
@@ -51,12 +52,36 @@ function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
     <svg
       viewBox={`0 0 ${totalW} ${totalH}`}
       width="100%"
+      preserveAspectRatio="xMidYMin meet"
       style={{ display: 'block', overflow: 'visible' }}
     >
+      {/* ── Column headers ── */}
+      {COLS.map((col, ci) => {
+        const uprightX = X0 + ci * COL_W
+        const cellX = uprightX + UPRIGHT_W + PAD
+        const cellW = COL_W - UPRIGHT_W - PAD * 2
+        return (
+          <text
+            key={col}
+            x={cellX + cellW / 2}
+            y={HEADER_H / 2}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={11}
+            fill="var(--text3, #666)"
+            fontFamily="var(--mono, monospace)"
+          >
+            {col}
+          </text>
+        )
+      })}
+
+      {/* ── Rows ── */}
       {ROWS.map((row, ri) => {
         const ry = Y0 + ri * (ROW_H + BEAM_H)
         return (
           <g key={row}>
+            {/* Row label */}
             <text
               x={X0 - 6}
               y={ry + BEAM_H + ROW_H / 2}
@@ -69,8 +94,16 @@ function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
               {row}
             </text>
 
-            <rect x={X0} y={ry} width={COLS.length * COL_W + UPRIGHT_W} height={BEAM_H} rx={2} fill={BEAM_COLOR} />
+            {/* Beam */}
+            <rect
+              x={X0} y={ry}
+              width={COLS.length * COL_W + UPRIGHT_W}
+              height={BEAM_H}
+              rx={2}
+              fill={BEAM_COLOR}
+            />
 
+            {/* Cells */}
             {COLS.map((col, ci) => {
               const uprightX = X0 + ci * COL_W
               const cellX = uprightX + UPRIGHT_W + PAD
@@ -84,13 +117,15 @@ function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
 
               return (
                 <g key={col}>
-                  <rect x={uprightX} y={ry} width={UPRIGHT_W} height={ROW_H + BEAM_H} rx={2} fill={UPRIGHT_COLOR} />
-
+                  <rect
+                    x={uprightX} y={ry}
+                    width={UPRIGHT_W}
+                    height={ROW_H + BEAM_H}
+                    rx={2}
+                    fill={UPRIGHT_COLOR}
+                  />
                   {loc ? (
-                    <g
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => onSelect(key, loc)}
-                    >
+                    <g style={{ cursor: 'pointer' }} onClick={() => onSelect(key, loc)}>
                       <rect
                         x={cellX} y={cellY} width={cellW} height={cellH} rx={5}
                         fill={isSel ? SELECTED_COLOR : FILLED_COLOR}
@@ -141,21 +176,18 @@ function ShelfSVG({ shelf, defaults, locationMap, selected, onSelect }) {
         )
       })}
 
+      {/* Right upright & bottom beam */}
       <rect
-        x={X0 + COLS.length * COL_W}
-        y={Y0}
+        x={X0 + COLS.length * COL_W} y={Y0}
         width={UPRIGHT_W}
         height={ROWS.length * (ROW_H + BEAM_H)}
-        rx={2}
-        fill={UPRIGHT_COLOR}
+        rx={2} fill={UPRIGHT_COLOR}
       />
       <rect
-        x={X0}
-        y={Y0 + ROWS.length * (ROW_H + BEAM_H)}
+        x={X0} y={Y0 + ROWS.length * (ROW_H + BEAM_H)}
         width={COLS.length * COL_W + UPRIGHT_W}
         height={BEAM_H}
-        rx={2}
-        fill={BEAM_COLOR}
+        rx={2} fill={BEAM_COLOR}
       />
     </svg>
   )
@@ -166,7 +198,11 @@ export default function ShelfMap({ shelfId, config, locations = [], selectedLoca
   const defaults = config?.defaults
 
   if (!shelf || !defaults) {
-    return <div style={{ color: 'var(--text3)', fontSize: 12, padding: 20 }}>ไม่พบการตั้งค่าชั้น &quot;{shelfId}&quot;</div>
+    return (
+      <div style={{ color: 'var(--text3)', fontSize: 12, padding: 20 }}>
+        ไม่พบการตั้งค่าชั้น &quot;{shelfId}&quot;
+      </div>
+    )
   }
 
   const nameMatch = new RegExp(shelf.nameMatchPattern, shelf.nameMatchFlags)
@@ -185,20 +221,24 @@ export default function ShelfMap({ shelfId, config, locations = [], selectedLoca
     let row = selectedLocation.row
     if (!col || !row) {
       const match = (selectedLocation.name || '').match(nameMatch)
-      if (match) {
-        col = match[1]
-        row = parseInt(match[2])
-      }
+      if (match) { col = match[1]; row = parseInt(match[2]) }
     }
     return col && row ? locKey(col, row) : null
   }
   const selectedKey = getSelectedKey()
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{shelf.name || shelf.id}</div>
-        <div style={{ display: 'flex', gap: 16 }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header: name + legend */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: 8,
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+          {shelf.name || shelf.id}
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text3)' }}>
             <span style={{ width: 10, height: 10, borderRadius: 2, background: defaults.filledColor, display: 'inline-block' }} />
             มี location ({filledCount})
@@ -210,22 +250,16 @@ export default function ShelfMap({ shelfId, config, locations = [], selectedLoca
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: `28px repeat(${shelf.cols.length}, 1fr)`, gap: 0, marginBottom: 4 }}>
-        <div />
-        {shelf.cols.map(c => (
-          <div key={c} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-            {c}
-          </div>
-        ))}
+      {/* SVG fills remaining space, scales with container */}
+      <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
+        <ShelfSVG
+          shelf={shelf}
+          defaults={defaults}
+          locationMap={locationMap}
+          selected={selectedKey}
+          onSelect={handleSelect}
+        />
       </div>
-
-      <ShelfSVG
-        shelf={shelf}
-        defaults={defaults}
-        locationMap={locationMap}
-        selected={selectedKey}
-        onSelect={handleSelect}
-      />
     </div>
   )
 }
