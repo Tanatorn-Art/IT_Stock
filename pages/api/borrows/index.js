@@ -1,6 +1,8 @@
-import { getDatabase } from '../../../lib/database.js'
+import { getDatabase, initializeDatabase } from '../../../lib/database.js'
 
 export default async function handler(req, res) {
+  // Ensure database is initialized
+  initializeDatabase()
   const { method, query } = req
 
   try {
