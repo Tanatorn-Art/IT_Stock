@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   // Handle different request methods
   if (req.method === 'GET') {
     const { filename } = req.query;
-    
+
     console.log('Filename from query:', filename);
 
     // If no filename in query, try to extract from URL path
@@ -17,13 +17,13 @@ export default async function handler(req, res) {
       // Extract filename from URL like /api/images/filename.webp
       const urlParts = req.url.split('/');
       imageFilename = urlParts[urlParts.length - 1];
-      
+
       // Remove any query parameters
       const queryIndex = imageFilename.indexOf('?');
       if (queryIndex > -1) {
         imageFilename = imageFilename.substring(0, queryIndex);
       }
-      
+
       console.log('Filename extracted from URL:', imageFilename);
     }
 
@@ -33,9 +33,9 @@ export default async function handler(req, res) {
     }
 
     try {
-      const imagePath = join('C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image', imageFilename);
+      const imagePath = join('C:\\inetpub\\wwwroot\\IT-Stock-Dev-2026\\IT_stock\\data\\image', imageFilename);
       console.log('Looking for file:', imagePath);
-      
+
       const fileStats = await stat(imagePath);
 
       if (!fileStats.isFile()) {
