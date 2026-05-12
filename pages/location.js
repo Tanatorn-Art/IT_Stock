@@ -369,7 +369,14 @@ export default function LocationPage() {
 
         /* Hidden shelves collapse away */
         .shelf-hidden {
-          display: none;
+          flex: 0 0 0 !important;
+          width: 0 !important;
+          opacity: 0;
+          overflow: hidden;
+          padding: 0;
+          margin: 0;
+          transform: translateX(-20px) scale(0.95);
+          pointer-events: none;
         }
 
         .shelf-default {
