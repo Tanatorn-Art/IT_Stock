@@ -623,6 +623,9 @@ export default function BorrowPage() {
     }
 
     setReturnModal({ open: false, borrowId: null, maxQty: 0, returnQty: 0 })
+
+    // Refresh data to ensure UI is updated
+    await fetchData()
   }
 
   const handleOpenReceiveReturnModal = (id, item, qty, requester) => {
@@ -644,7 +647,7 @@ export default function BorrowPage() {
     try {
       // Call requisitions API to update status
       const response = await fetch(`/api/requisitions/${requisitionId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       })
 
@@ -671,11 +674,15 @@ export default function BorrowPage() {
 
         showToast('รับคืนรายการเรียบร้อย!')
         handleCloseReceiveReturnModal()
+
+        // Refresh data to ensure UI is updated
+        await fetchData()
       } else {
         throw new Error('API error')
       }
     } catch (error) {
       console.error('Error receiving return:', error)
+      showToast('เกิดข้อผิดพลาดในการรับคืน', 'error')
     }
   }
 
@@ -683,7 +690,7 @@ export default function BorrowPage() {
     try {
       // Call requisitions API to update status
       const response = await fetch(`/api/requisitions/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       })
 
@@ -709,6 +716,9 @@ export default function BorrowPage() {
         }
 
         showToast('รับคืนรายการเรียบร้อย!')
+
+        // Refresh data to ensure UI is updated
+        await fetchData()
       } else {
         throw new Error('API error')
       }
