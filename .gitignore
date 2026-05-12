@@ -134,6 +134,9 @@ Thumbs.db
 logs
 *.log
 
+# Data directory
+data/
+
 # Temporary folders
 tmp/
 temp/
@@ -147,6 +150,7 @@ pids
 # Database
 database.sqlite
 *.sqlite
+database.sqlite*
 
 # Public folder - keep essential images, ignore uploads
 public/images/temp-*

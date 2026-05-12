@@ -438,10 +438,19 @@ function DetailPanel({ item, onClose, onEdit, onDelete }) {
                 filename = `temp-${Date.now()}-${newImageFile.name.replace(/[^a-zA-Z0-9.-]/g, '').split('.').slice(0, -1).join('.')}.webp`
               }
 
-              const res = await fetch('/api/upload', {
+              // Create FormData for the new upload API
+              const formData = new FormData()
+              const response = await fetch(base64)
+              const blob = await response.blob()
+              formData.append('file', blob, filename)
+              formData.append('filename', filename)
+
+              console.log('Uploading file:', filename)
+              console.log('FormData entries being sent:', Array.from(formData.entries()))
+
+              const res = await fetch('/api/upload_img', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64, filename }),
+                body: formData,
               })
               const data = await res.json()
               if (data.path) {
