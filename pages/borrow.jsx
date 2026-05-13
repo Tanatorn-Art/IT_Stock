@@ -231,20 +231,21 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['รหัส', 'ผู้ยืม', 'แผนก', 'อุปกรณ์', 'วันยืม', 'วันคืน', 'สถานะ', ''].map(h => (
+              {['รหัส', 'รหัสพนักงาน', 'ผู้ยืม', 'แผนก', 'อุปกรณ์', 'วันยืม', 'วันคืน', 'สถานะ', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredBorrows.length === 0 ? (
-              <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
+              <tr><td colSpan={9} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
             ) : filteredBorrows.map(b => {
               const st = STATUS_CONFIG[b.status] || {}
               const dc = DEPT_COLORS[b.dept] || { bg: '#eee', color: '#333' }
               return (
                 <tr key={b.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s' }}>
                   <td style={{ padding: '9px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text3)' }}>{b.id}</td>
+                  <td style={{ padding: '9px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text2)' }}>{b.employee_code || '—'}</td>
                   <td style={{ padding: '9px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>{b.borrower}</td>
                   <td style={{ padding: '9px 10px' }}><Badge text={b.dept} bg={dc.bg} color={dc.color} /></td>
                   <td style={{ padding: '9px 10px', color: 'var(--text2)' }}>{b.item} × {b.qty}</td>
@@ -301,20 +302,21 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['รหัส', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ','วันที่รับคืน', 'หมายเหตุ', 'สถานะ', ''].map(h => (
+              {['รหัส', 'รหัสพนักงาน', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ','วันที่รับคืน', 'หมายเหตุ', 'สถานะ', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredReqs.length === 0 ? (
-              <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
+              <tr><td colSpan={10} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
             ) : filteredReqs.map(r => {
               const st = STATUS_CONFIG[r.status] || {}
               const dc = DEPT_COLORS[r.dept] || { bg: '#eee', color: '#333' }
               return (
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s' }}>
                   <td style={{ padding: '9px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text3)' }}>{r.id}</td>
+                  <td style={{ padding: '9px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text2)' }}>{r.employee_code || '—'}</td>
                   <td style={{ padding: '9px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>{r.requester}</td>
                   <td style={{ padding: '9px 10px' }}><Badge text={r.dept} bg={dc.bg} color={dc.color} /></td>
                   <td style={{ padding: '9px 10px', color: 'var(--text2)' }}>{r.item} × {r.qty}</td>
@@ -439,14 +441,14 @@ export default function BorrowPage() {
 
   const filteredBorrows = useMemo(() => borrows.filter(b => {
     const q = bSearch.toLowerCase()
-    const matchSearch = !q || b.borrower.toLowerCase().includes(q) || b.item.toLowerCase().includes(q) || b.id.toLowerCase().includes(q)
+    const matchSearch = !q || b.borrower.toLowerCase().includes(q) || b.item.toLowerCase().includes(q) || b.id.toLowerCase().includes(q) || String(b.employee_code || '').toLowerCase().includes(q)
     const matchStatus = !bFilterStatus || b.status === bFilterStatus
     return matchSearch && matchStatus
   }), [borrows, bSearch, bFilterStatus])
 
   const filteredReqs = useMemo(() => requisitions.filter(r => {
     const q = rSearch.toLowerCase()
-    const matchSearch = !q || r.requester.toLowerCase().includes(q) || r.item.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)
+    const matchSearch = !q || r.requester.toLowerCase().includes(q) || r.item.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || String(r.employee_code || '').toLowerCase().includes(q)
     const matchStatus = !rFilterStatus || r.status === rFilterStatus
     return matchSearch && matchStatus
   }), [requisitions, rSearch, rFilterStatus])
@@ -476,9 +478,10 @@ export default function BorrowPage() {
     setSubmitLoading(true)
     try {
       const endpoint = tab === 'borrow' ? '/api/borrows' : '/api/requisitions'
+      const emp = employeeId.trim()
       const body = tab === 'borrow'
-        ? { borrower: form.person, dept: form.dept, item: form.item, qty: form.qty, dueDate: form.dueDate, note: form.note, borrowDate: new Date().toISOString().slice(0, 10), status: 'active' }
-        : { requester: form.person, dept: form.dept, item: form.item, qty: form.qty, note: form.note, requestDate: new Date().toISOString().slice(0, 10), status: 'pending' }
+        ? { borrower: form.person, employeeCode: emp, dept: form.dept, item: form.item, qty: form.qty, dueDate: form.dueDate, note: form.note, borrowDate: new Date().toISOString().slice(0, 10), status: 'active' }
+        : { requester: form.person, employeeCode: emp, dept: form.dept, item: form.item, qty: form.qty, note: form.note, requestDate: new Date().toISOString().slice(0, 10), status: 'pending' }
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) {
         const newItem = await res.json()
@@ -516,9 +519,9 @@ export default function BorrowPage() {
         ? `B${String(borrows.length + 1).padStart(3, '0')}`
         : `R${String(requisitions.length + 1).padStart(3, '0')}`
       if (tab === 'borrow') {
-        setBorrows(prev => [{ id: newId, borrower: form.person, dept: form.dept, item: form.item, qty: form.qty, borrow_date: new Date().toISOString().slice(0, 10), due_date: form.dueDate, status: 'active', note: form.note }, ...prev])
+        setBorrows(prev => [{ id: newId, borrower: form.person, employee_code: employeeId.trim(), dept: form.dept, item: form.item, qty: form.qty, borrow_date: new Date().toISOString().slice(0, 10), due_date: form.dueDate, status: 'active', note: form.note }, ...prev])
       } else {
-        setRequisitions(prev => [{ id: newId, requester: form.person, dept: form.dept, item: form.item, qty: form.qty, request_date: new Date().toISOString().slice(0, 10), status: 'pending', note: form.note }, ...prev])
+        setRequisitions(prev => [{ id: newId, requester: form.person, employee_code: employeeId.trim(), dept: form.dept, item: form.item, qty: form.qty, request_date: new Date().toISOString().slice(0, 10), status: 'pending', note: form.note }, ...prev])
       }
 
       // Update stock quantity via API (even in offline mode)

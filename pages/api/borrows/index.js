@@ -15,8 +15,8 @@ export default async function handler(req, res) {
       if (status) { sql += ` AND status = ?`;  params.push(status) }
       if (dept)   { sql += ` AND dept = ?`;    params.push(dept) }
       if (search) {
-        sql += ` AND (borrower LIKE ? OR item LIKE ?)`
-        params.push(`%${search}%`, `%${search}%`)
+        sql += ` AND (borrower LIKE ? OR item LIKE ? OR IFNULL(employee_code, '') LIKE ?)`
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`)
       }
       sql += ` ORDER BY borrow_date DESC`
 
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     if (method === 'POST') {
-      const { borrower, dept, item, qty, borrowDate, dueDate, note, status = 'active' } = req.body
+      const { borrower, dept, item, qty, borrowDate, dueDate, note, status = 'active', employeeCode = '' } = req.body
 
       if (!borrower || !dept || !item) {
         return res.status(400).json({ error: 'Missing required fields: borrower, dept, item' })
@@ -42,15 +42,15 @@ export default async function handler(req, res) {
         console.log('Generated ID:', id)
 
         database.prepare(`
-          INSERT INTO borrows (id, borrower, dept, item, qty, borrow_date, due_date, note, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, borrower, dept, item, qty ?? 1, borrowDate ?? new Date().toISOString().slice(0, 10), dueDate ?? null, note ?? '', status)
+          INSERT INTO borrows (id, borrower, employee_code, dept, item, qty, borrow_date, due_date, note, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, borrower, String(employeeCode ?? '').trim(), dept, item, qty ?? 1, borrowDate ?? new Date().toISOString().slice(0, 10), dueDate ?? null, note ?? '', status)
 
         // Log to activity
         database.prepare(`
           INSERT INTO activity_logs (category, level, message, metadata, timestamp)
           VALUES ('borrow', 'normal', ?, ?, datetime('now'))
-        `).run(`New borrow created: ${borrower} ยืม ${item} × ${qty}`, JSON.stringify({borrowId: id, borrower, dept, item, qty, borrowDate, dueDate, note, status}))
+        `).run(`New borrow created: ${borrower} ยืม ${item} × ${qty}`, JSON.stringify({borrowId: id, borrower, employeeCode: String(employeeCode ?? '').trim(), dept, item, qty, borrowDate, dueDate, note, status}))
 
         const newRow = database.prepare(`SELECT * FROM borrows WHERE id = ?`).get(id)
         return res.status(201).json(newRow)

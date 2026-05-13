@@ -13,6 +13,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS borrows (
         id TEXT PRIMARY KEY,
         borrower TEXT NOT NULL,
+        employee_code TEXT DEFAULT '',
         dept TEXT NOT NULL,
         item TEXT NOT NULL,
         qty INTEGER DEFAULT 1,
@@ -30,6 +31,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS requisitions (
         id TEXT PRIMARY KEY,
         requester TEXT NOT NULL,
+        employee_code TEXT DEFAULT '',
         dept TEXT NOT NULL,
         item TEXT NOT NULL,
         qty INTEGER DEFAULT 1,

@@ -15,8 +15,8 @@ export default async function handler(req, res) {
       if (status) { sql += ` AND status = ?`;   params.push(status) }
       if (dept)   { sql += ` AND dept = ?`;     params.push(dept) }
       if (search) {
-        sql += ` AND (requester LIKE ? OR item LIKE ?)`
-        params.push(`%${search}%`, `%${search}%`)
+        sql += ` AND (requester LIKE ? OR item LIKE ? OR IFNULL(employee_code, '') LIKE ?)`
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`)
       }
       sql += ` ORDER BY request_date DESC`
 
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     if (method === 'POST') {
-      const { requester, dept, item, qty, note, requestDate, status = 'pending' } = req.body
+      const { requester, dept, item, qty, note, requestDate, status = 'pending', employeeCode = '' } = req.body
 
       if (!requester || !dept || !item) {
         return res.status(400).json({ error: 'Missing required fields' })
@@ -41,15 +41,15 @@ export default async function handler(req, res) {
         console.log('Generated ID:', id)
 
         database.prepare(`
-          INSERT INTO requisitions (id, requester, dept, item, qty, request_date, note, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, requester, dept, item, qty ?? 1, requestDate ?? new Date().toISOString().slice(0, 10), note ?? '', status)
+          INSERT INTO requisitions (id, requester, employee_code, dept, item, qty, request_date, note, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, requester, String(employeeCode ?? '').trim(), dept, item, qty ?? 1, requestDate ?? new Date().toISOString().slice(0, 10), note ?? '', status)
 
         // Log to activity
         database.prepare(`
           INSERT INTO activity_logs (category, level, message, metadata, timestamp)
           VALUES ('requisition', 'normal', ?, ?, datetime('now'))
-        `).run(`New requisition created: ${requester} เบิก ${item} × ${qty}`, JSON.stringify({requisitionId: id, requester, dept, item, qty, requestDate, note, status}))
+        `).run(`New requisition created: ${requester} เบิก ${item} × ${qty}`, JSON.stringify({requisitionId: id, requester, employeeCode: String(employeeCode ?? '').trim(), dept, item, qty, requestDate, note, status}))
 
         const newRow = database.prepare(`SELECT * FROM requisitions WHERE id = ?`).get(id)
         return res.status(201).json(newRow)
