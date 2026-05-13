@@ -8,7 +8,7 @@ import {
   Package, MapPin, Scan,
   Clock, ClipboardCheck, AlertCircle, Box,
   Plus, List, Search, Check, X,
-  RefreshCw, Download,
+  RefreshCw, Download, User, Building2, CheckCircle2, Eye,
   Mouse, Monitor, Network,
   Server, HardDrive, Smartphone, Tablet, Laptop
 } from 'lucide-react'
@@ -59,6 +59,69 @@ function StatCard({ icon: Icon, label, value, color }) {
 
 function Badge({ text, bg, color }) {
   return <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: bg, color, fontWeight: 500 }}>{text}</span>
+}
+
+function EmployeeLookupPhoto({ employeeId }) {
+  const [showFallback, setShowFallback] = useState(false)
+  useEffect(() => {
+    setShowFallback(false)
+  }, [employeeId])
+  if (!employeeId) return null
+  const frame = {
+    width: 76,
+    height: 76,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    flexShrink: 0,
+    overflow: 'hidden',
+    background: 'var(--surface2)',
+  }
+  if (showFallback) {
+    return (
+      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',height: 130, width: 90, padding: 4 }} aria-hidden>
+        <User size={32} strokeWidth={1.5} />
+      </div>
+    )
+  }
+  return (
+    <img
+      alt=""
+      src={`/api/employee-image/${encodeURIComponent(employeeId)}`}
+      onError={() => setShowFallback(true)}
+      style={{ ...frame, display: 'block', objectFit: 'cover', height: 130, width: 90, padding: 4 }}
+    />
+  )
+}
+function EmployeeLookupPhotoModal({ employeeId }) {
+  const [showFallback, setShowFallback] = useState(false)
+  useEffect(() => {
+    setShowFallback(false)
+  }, [employeeId])
+  if (!employeeId) return null
+  const frame = {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    flexShrink: 0,
+    overflow: 'hidden',
+    background: 'var(--surface2)',
+  }
+  if (showFallback) {
+    return (
+      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',height: 130, width: 90, padding: 4 }} aria-hidden>
+        <User size={32} strokeWidth={1.5} />
+      </div>
+    )
+  }
+  return (
+    <img
+      alt=""
+      src={`/api/employee-image/${encodeURIComponent(employeeId)}`}
+      onError={() => setShowFallback(true)}
+      style={{ ...frame, display: 'block', objectFit: 'cover', height: 200, width: 130, padding: 4 }}
+    />
+  )
 }
 
 function Stat({ label, val, unit, color }) {
@@ -206,7 +269,7 @@ function ItemPickerPanel({ stockItems, form, setForm }) {
 }
 
 // ── BorrowListPanel ───────────────────────────────────────────────────────────
-function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, setBFilterStatus, handleReturn, calculateOverdueDays }) {
+function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, setBFilterStatus, handleReturn, calculateOverdueDays, onOpenDetail }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -238,7 +301,7 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
           </thead>
           <tbody>
             {filteredBorrows.length === 0 ? (
-              <tr><td colSpan={9} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
+              <tr><td colSpan={10} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
             ) : filteredBorrows.map(b => {
               const st = STATUS_CONFIG[b.status] || {}
               const dc = DEPT_COLORS[b.dept] || { bg: '#eee', color: '#333' }
@@ -267,6 +330,26 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
                       </button>
                     )}
                   </td>
+                  <td style={{ padding: '9px 10px' }}>
+                    <button
+                      onClick={() => onOpenDetail?.('borrow', b)}
+                      title="ดูรายละเอียด"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--text2)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Eye size={15} />
+                    </button>
+                  </td>
                 </tr>
               )
             })}
@@ -278,7 +361,7 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
 }
 
 // ── RequisitionListPanel ──────────────────────────────────────────────────────
-function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus, setRFilterStatus, handleOpenReceiveReturnModal }) {
+function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus, setRFilterStatus, handleOpenReceiveReturnModal, onOpenDetail }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -302,14 +385,14 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['รหัส', 'รหัสพนักงาน', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ','วันที่รับคืน', 'หมายเหตุ', 'สถานะ', ''].map(h => (
+              {['รหัส', 'รหัสพนักงาน', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ','วันที่รับคืน', 'สถานะ', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredReqs.length === 0 ? (
-              <tr><td colSpan={10} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
+              <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
             ) : filteredReqs.map(r => {
               const st = STATUS_CONFIG[r.status] || {}
               const dc = DEPT_COLORS[r.dept] || { bg: '#eee', color: '#333' }
@@ -322,7 +405,7 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
                   <td style={{ padding: '9px 10px', color: 'var(--text2)' }}>{r.item} × {r.qty}</td>
                   <td style={{ padding: '9px 10px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{fmtDate(r.request_date)}</td>
                   <td style={{ padding: '9px 10px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{r.status === 'pending' ? '-' : (r.updatedAt ? fmtDate(r.updatedAt) : '-')}</td>
-                  <td style={{ padding: '9px 10px', color: 'var(--text2)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.note || '-'}</td>
+                  {/* <td style={{ padding: '9px 10px', color: 'var(--text2)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.note || '-'}</td> */}
                   <td style={{ padding: '9px 10px' }}><Badge text={st.label} bg={st.bg} color={st.color} /></td>
                   <td style={{ padding: '9px 10px' }}>
                     {r.status === 'pending' && (
@@ -331,6 +414,26 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
                         รับคืน
                       </button>
                     )}
+                  </td>
+                  <td style={{ padding: '9px 10px' }}>
+                    <button
+                      onClick={() => onOpenDetail?.('requisition', r)}
+                      title="ดูรายละเอียด"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--text2)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Eye size={15} />
+                    </button>
                   </td>
                 </tr>
               )
@@ -356,6 +459,7 @@ export default function BorrowPage() {
   const [form, setForm] = useState({ person: '', dept: '', item: '', qty: 1, dueDate: '', note: '' })
   const [employeeId, setEmployeeId] = useState('')
   const [employeeData, setEmployeeData] = useState(null)
+  const [lookedUpEmployeeId, setLookedUpEmployeeId] = useState('')
   const [employeeLoading, setEmployeeLoading] = useState(false)
   const [stockItems, setStockItems] = useState([])
 
@@ -372,16 +476,26 @@ export default function BorrowPage() {
   // ✅ เพิ่ม state สำหรับ modal รับคืน
   const [receiveReturnModal, setReceiveReturnModal] = useState({ open: false, requisitionId: null, item: '', qty: 0, requester: '' })
 
+  // Detail modal (borrow / requisition)
+  const [detailModal, setDetailModal] = useState({ open: false, type: 'borrow', data: null })
+  const [detailEmployeeData, setDetailEmployeeData] = useState(null)
+  const [detailEmployeeLoading, setDetailEmployeeLoading] = useState(false)
+
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
   }
 
   const fetchEmployeeData = async (empId) => {
-    if (!empId.trim()) { setEmployeeData(null); setForm(prev => ({ ...prev, person: '', dept: '' })); return }
+    if (!empId.trim()) {
+      setEmployeeData(null)
+      setLookedUpEmployeeId('')
+      setForm(prev => ({ ...prev, person: '', dept: '' }))
+      return
+    }
     setEmployeeLoading(true)
     try {
-      const response = await fetch(`/api/employee-lookup?employeeId=${empId}`)
+      const response = await fetch(`/api/employee-lookup?employeeId=${encodeURIComponent(empId)}`)
       if (response.ok) {
         const responseJson = await response.json()
         if (responseJson.success && responseJson.data && responseJson.data.length > 0) {
@@ -389,20 +503,25 @@ export default function BorrowPage() {
           const fullName = employee.nameEng && employee.lastNameEng
             ? `${employee.nameEng.trim()} ${employee.lastNameEng.trim()}`.trim()
             : employee.fullName || ''
+          const idKey = empId.trim()
           setEmployeeData(employee)
+          setLookedUpEmployeeId(idKey)
           setForm(prev => ({ ...prev, person: fullName, dept: employee.departmentGroup || '' }))
           showToast('พบข้อมูลพนักงาน', 'success')
         } else {
           setEmployeeData(null)
+          setLookedUpEmployeeId('')
           showToast('ไม่พบข้อมูลพนักงาน', 'error')
         }
       } else {
         setEmployeeData(null)
+        setLookedUpEmployeeId('')
         showToast('ไม่สามารถเชื่อมต่อ API พนักงาน', 'error')
       }
     } catch (error) {
       console.error('Employee lookup error:', error)
       setEmployeeData(null)
+      setLookedUpEmployeeId('')
       showToast('เกิดข้อผิดพลาดในการค้นหาข้อมูล', 'error')
     } finally {
       setEmployeeLoading(false)
@@ -465,6 +584,7 @@ export default function BorrowPage() {
   const resetForm = () => {
     setForm({ person: '', dept: '', item: '', qty: 1, dueDate: '', note: '' })
     setEmployeeData(null)
+    setLookedUpEmployeeId('')
     setEmployeeId('')
   }
 
@@ -689,6 +809,34 @@ export default function BorrowPage() {
     }
   }
 
+  const handleOpenDetail = async (type, row) => {
+    setDetailModal({ open: true, type, data: row })
+    setDetailEmployeeData(null)
+
+    const empCode = row?.employee_code
+    if (!empCode) return
+
+    setDetailEmployeeLoading(true)
+    try {
+      const res = await fetch(`/api/employee-lookup?employeeId=${encodeURIComponent(empCode)}`)
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.data?.length > 0) {
+          setDetailEmployeeData(json.data[0])
+        }
+      }
+    } catch (e) {
+      console.error('Employee lookup error:', e)
+    } finally {
+      setDetailEmployeeLoading(false)
+    }
+  }
+
+  const handleCloseDetail = () => {
+    setDetailModal({ open: false, type: 'borrow', data: null })
+    setDetailEmployeeData(null)
+  }
+
   const handleReceiveReturn = async (id) => {
     try {
       // Call requisitions API to update status
@@ -859,14 +1007,52 @@ export default function BorrowPage() {
                         </button>
                       </div>
                       {employeeData && (
-                        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, color: 'var(--text2)' }}>{tab === 'borrow' ? 'ผู้ยืม:' : 'ผู้เบิก:'}</span>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{form.person}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, color: 'var(--text2)' }}>แผนก:</span>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{employeeData.departmentGroup || ''}</span>
+                        <div style={{ marginTop: 10, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          {lookedUpEmployeeId && employeeId.trim() === lookedUpEmployeeId && (
+                            <EmployeeLookupPhoto employeeId={lookedUpEmployeeId} />
+                          )}
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)', flexShrink: 0 }}>
+                                {tab === 'borrow' ? 'ผู้ยืม:' : 'ผู้เบิก:'}
+                              </span>
+                              <span
+                                title={form.person}
+                                style={{
+                                  fontSize: 13, fontWeight: 600, color: 'var(--text)',
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                  minWidth: 0, flex: 1, cursor: 'default'
+                                }}
+                              >
+                                {form.person}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)' }}>แผนก:</span>
+                              {/* <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{employeeData.departmentGroup || ''}</span> */}
+                              <span
+                                title={employeeData.departmentGroup}
+                                style={{
+                                  fontSize: 13, fontWeight: 600, color: 'var(--text)',
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                  minWidth: 0, flex: 1, cursor: 'default'
+                                }}
+                              >
+                                {employeeData.departmentGroup || ''}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)' }}>หน่วยงาน:</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{employeeData.department || ''}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)' }}>WD:</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{employeeData.workDateNumber || ''}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)' }}>Level:</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{employeeData.levelCard || ''}</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -983,6 +1169,7 @@ export default function BorrowPage() {
                   bFilterStatus={bFilterStatus} setBFilterStatus={setBFilterStatus}
                   handleReturn={handleReturn}
                   calculateOverdueDays={calculateOverdueDays}
+                  onOpenDetail={handleOpenDetail}
                 />
               </div>
             )}
@@ -994,7 +1181,169 @@ export default function BorrowPage() {
                   rSearch={rSearch} setRSearch={setRSearch}
                   rFilterStatus={rFilterStatus} setRFilterStatus={setRFilterStatus}
                   handleOpenReceiveReturnModal={handleOpenReceiveReturnModal}
+                  onOpenDetail={handleOpenDetail}
                 />
+              </div>
+            )}
+
+            {/* ── Detail Modal ── */}
+            {detailModal.open && detailModal.data && (
+              <div
+                onClick={handleCloseDetail}
+                style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.45)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    width: 'min(750px, 96vw)',
+                    background: 'rgba(255,255,255,0.92)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 14,
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--accent-glow)', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Eye size={18} color="var(--accent)" />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {detailModal.type === 'borrow' ? 'รายละเอียดรายการยืม' : 'รายละเอียดรายการเบิก'}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
+                          {detailModal.data.id}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCloseDetail}
+                      style={{ border: '1px solid var(--border)', background: 'transparent', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <X size={14} /> ปิด
+                    </button>
+                  </div>
+
+                  <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '250px 1fr', gap: 14 }}>
+                  {/* Employee */}
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 , marginLeft: 73 , marginTop: -5}}>รูปผู้ทำรายการ</div>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' , marginLeft: 43}}>
+                      {/* Photo */}
+                      <EmployeeLookupPhotoModal employeeId={detailModal.data.employee_code || ''} />
+                    </div>
+                  </div>
+
+                    {/* Item */}
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
+                      {/* Info */}
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 }}>ผู้ทำรายการ</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+
+                        {/* ชื่อ */}
+                        {/* <div
+                          title={detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
+                          style={{
+                            fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 10,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',  // ✅ มีอยู่แล้ว
+                            minWidth: 0  // ✅ เพิ่ม
+                          }}
+                        >
+                          {detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
+                        </div> */}
+                        {detailEmployeeLoading ? (
+                          <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <RefreshCw size={12} className="spin" /> กำลังโหลดข้อมูลพนักงาน...
+                          </div>
+                        ) : (
+                          [
+                            { label: 'ชื่อ', value: detailModal.data.borrower || detailModal.data.requester || '—', mono: true },
+                            { label: 'รหัสพนักงาน', value: detailModal.data.employee_code || '—', mono: true },
+                            { label: 'WD',          value: detailEmployeeData?.workDateNumber || detailModal.data.workDateNumber || '—', mono: true },
+                            { label: 'แผนก',        value: detailEmployeeData?.departmentGroup || detailModal.data.dept || '—', mono: true },
+                            { label: 'หน่วยงาน',    value: detailEmployeeData?.department || detailModal.data.department || '—' ,mono: true },
+                            { label: 'Level',       value: detailEmployeeData?.levelCard || detailModal.data.levelCard || '—',mono: true  },
+                          ].map(({ label, value, mono, badge }) => (
+                            <div key={label} style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '5px 0', borderBottom: '1px solid var(--border)',
+                                overflow: 'hidden'  // ✅
+                              }}>
+                                <span style={{ fontSize: 12, color: 'var(--text2)', minWidth: 100, flexShrink: 0 }}>{label}</span>
+                                {badge
+                                  ? <Badge
+                                      text={value}
+                                      bg={(DEPT_COLORS[value] || { bg: '#E6F1FB' }).bg}
+                                      color={(DEPT_COLORS[value] || { color: '#185FA5' }).color}
+                                    />
+                                  : <span
+                                      title={value}
+                                      style={{
+                                        fontSize: mono ? 12 : 13,
+                                        fontWeight: 500,
+                                        color: 'var(--text)',
+                                        fontFamily: mono ? 'monospace' : 'inherit',
+                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                        minWidth: 0, flex: 1  // ✅
+                                      }}
+                                    >{value}</span>
+                                }
+                              </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 , marginTop: 15 }}>รายการอุปกรณ์</div>
+                      {[
+                        { label: 'อุปกรณ์',   value: detailModal.data.item },
+                        { label: 'จำนวน',     value: `${detailModal.data.qty} ชิ้น` },
+                        {
+                          label: detailModal.type === 'borrow' ? 'วันยืม' : 'วันที่ขอ',
+                          value: fmtDate(detailModal.type === 'borrow' ? detailModal.data.borrow_date : detailModal.data.request_date)
+                        },
+                        {
+                          label: detailModal.type === 'borrow' ? 'วันกำหนดคืน' : 'วันที่รับคืน',
+                          value: detailModal.type === 'borrow'
+                            ? fmtDate(detailModal.data.due_date)
+                            : (detailModal.data.status === 'pending' ? '-' : (detailModal.data.updatedAt ? fmtDate(detailModal.data.updatedAt) : '-'))
+                        },
+                        { label: 'สถานะ', value: detailModal.data.status, status: true },
+                        { label: 'หมายเหตุ', value: detailModal.data.note || '-', wrap: true },
+                      ].map(({ label, value, status, wrap , mono}) => (
+                        <div key={label} style={{
+                          display: 'flex',
+                          alignItems: wrap ? 'flex-start' : 'center',  // ✅
+                          gap: 6,
+                          padding: '5px 0', borderBottom: '1px solid var(--border)',
+                          overflow: 'hidden'
+                        }}>
+                          <span style={{ fontSize: 12, color: 'var(--text2)', minWidth: 100, flexShrink: 0 }}>{label}</span>
+                          {status ? (() => {
+                            const st = STATUS_CONFIG[value] || { label: value, bg: '#eee', color: '#333' }
+                            return <Badge text={st.label} bg={st.bg} color={st.color} />
+                          })() : (
+                            <span
+                              title={value}
+                              style={{
+                                fontSize: mono ? 12 : 13,
+                                overflow: 'hidden', textOverflow: 'ellipsis',
+                                whiteSpace: wrap ? 'normal' : 'nowrap',  // ✅
+                                wordBreak: wrap ? 'break-word' : 'normal', // ✅
+                                minWidth: 0, flex: 1
+                              }}
+                            >{value}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
