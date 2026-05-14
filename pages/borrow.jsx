@@ -124,6 +124,38 @@ function EmployeeLookupPhotoModal({ employeeId }) {
   )
 }
 
+function StockItemPhoto({ itemName, stockItems }) {
+  const stockItem = stockItems.find(i => i.name === itemName)
+  const imageUrl = stockItem?.image
+
+  const frame = {
+    width: 130,
+    height: 130,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    flexShrink: 0,
+    overflow: 'hidden',
+    background: 'var(--surface2)',
+  }
+
+  if (!imageUrl) {
+    return (
+      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 42.5, marginTop: 3,
+                    color: 'var(--text3)', fontSize: 40, width: 130, height: 130 }}>
+        📦
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={itemName}
+      style={{ ...frame, display: 'block', objectFit: 'cover', height: 130, width: 130, padding: 4 , marginLeft: 42.5, marginTop: 3 }}
+    />
+  )
+}
+
 function Stat({ label, val, unit, color }) {
   return (
     <div style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
@@ -1230,92 +1262,108 @@ export default function BorrowPage() {
                     </button>
                   </div>
 
-                  <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '250px 1fr', gap: 14 }}>
-                  {/* Employee */}
+                  <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '200px 1fr', gap: 14 }}>
+
+                  {/* Left panel – photos */}
                   <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 , marginLeft: 73 , marginTop: -5}}>รูปผู้ทำรายการ</div>
-                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' , marginLeft: 43}}>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 , marginLeft: 50 , marginTop: -5}}>รูปผู้ทำรายการ</div>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' ,
+                       marginLeft: 20 ,
+                        }}>
                       {/* Photo */}
                       <EmployeeLookupPhotoModal employeeId={detailModal.data.employee_code || ''} />
                     </div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 ,
+                       marginLeft: 45 ,
+                       marginTop: 20
+                       }}>รูปรายการอุปกรณ์</div>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' ,
+                       marginLeft: -23
+                       }}>
+                      {/* Photo รายการ stock ที่ยืม/เบิก*/}
+                      <StockItemPhoto itemName={detailModal.data.item} stockItems={stockItems} />
+                    </div>
                   </div>
 
-                    {/* Item */}
-                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
-                      {/* Info */}
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 }}>ผู้ทำรายการ</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Item */}
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
+                    {/* Info */}
+                    <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 }}>ผู้ทำรายการ</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
 
-                        {/* ชื่อ */}
-                        {/* <div
-                          title={detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
-                          style={{
-                            fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 10,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',  // ✅ มีอยู่แล้ว
-                            minWidth: 0  // ✅ เพิ่ม
-                          }}
-                        >
-                          {detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
-                        </div> */}
-                        {detailEmployeeLoading ? (
-                          <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <RefreshCw size={12} className="spin" /> กำลังโหลดข้อมูลพนักงาน...
-                          </div>
-                        ) : (
-                          [
-                            { label: 'ชื่อ', value: detailModal.data.borrower || detailModal.data.requester || '—', mono: true },
-                            { label: 'รหัสพนักงาน', value: detailModal.data.employee_code || '—', mono: true },
-                            { label: 'WD',          value: detailEmployeeData?.workDateNumber || detailModal.data.workDateNumber || '—', mono: true },
-                            { label: 'แผนก',        value: detailEmployeeData?.departmentGroup || detailModal.data.dept || '—', mono: true },
-                            { label: 'หน่วยงาน',    value: detailEmployeeData?.department || detailModal.data.department || '—' ,mono: true },
-                            { label: 'Level',       value: detailEmployeeData?.levelCard || detailModal.data.levelCard || '—',mono: true  },
-                          ].map(({ label, value, mono, badge }) => (
-                            <div key={label} style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                padding: '5px 0', borderBottom: '1px solid var(--border)',
-                                overflow: 'hidden'  // ✅
-                              }}>
-                                <span style={{ fontSize: 12, color: 'var(--text2)', minWidth: 100, flexShrink: 0 }}>{label}</span>
-                                {badge
-                                  ? <Badge
-                                      text={value}
-                                      bg={(DEPT_COLORS[value] || { bg: '#E6F1FB' }).bg}
-                                      color={(DEPT_COLORS[value] || { color: '#185FA5' }).color}
-                                    />
-                                  : <span
-                                      title={value}
-                                      style={{
-                                        fontSize: mono ? 12 : 13,
-                                        fontWeight: 500,
-                                        color: 'var(--text)',
-                                        fontFamily: mono ? 'monospace' : 'inherit',
-                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                        minWidth: 0, flex: 1  // ✅
-                                      }}
-                                    >{value}</span>
-                                }
-                              </div>
+                      {/* ชื่อ */}
+                      {/* <div
+                        title={detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
+                        style={{
+                          fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 10,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',  // ✅ มีอยู่แล้ว
+                          minWidth: 0  // ✅ เพิ่ม
+                        }}
+                      >
+                        {detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
+                      </div> */}
+                      {detailEmployeeLoading ? (
+                        <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <RefreshCw size={12} className="spin" /> กำลังโหลดข้อมูลพนักงาน...
+                        </div>
+                      ) : (
+                        [
+                          { label: 'ชื่อ', value: detailModal.data.borrower || detailModal.data.requester || '—', mono: true },
+                          { label: 'รหัสพนักงาน', value: detailModal.data.employee_code || '—', mono: true },
+                          { label: 'WD',          value: detailEmployeeData?.workDateNumber || detailModal.data.workDateNumber || '—', mono: true },
+                          { label: 'แผนก',        value: detailEmployeeData?.departmentGroup || detailModal.data.dept || '—', mono: true },
+                          { label: 'หน่วยงาน',    value: detailEmployeeData?.department || detailModal.data.department || '—' ,mono: true },
+                          { label: 'Level',       value: detailEmployeeData?.levelCard || detailModal.data.levelCard || '—',mono: true  },
+                        ].map(({ label, value, mono, badge }) => (
+                          <div key={label} style={{
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              padding: '5px 0', borderBottom: '1px solid var(--border)',
+                              overflow: 'hidden'  // ✅
+                            }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)', minWidth: 100, flexShrink: 0 }}>{label}</span>
+                              {badge
+                                ? <Badge
+                                    text={value}
+                                    bg={(DEPT_COLORS[value] || { bg: '#E6F1FB' }).bg}
+                                    color={(DEPT_COLORS[value] || { color: '#185FA5' }).color}
+                                  />
+                                : <span
+                                    title={value}
+                                    style={{
+                                      fontSize: mono ? 12 : 13,
+                                      fontWeight: 500,
+                                      color: 'var(--text)',
+                                      fontFamily: mono ? 'monospace' : 'inherit',
+                                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                      minWidth: 0, flex: 1  // ✅
+                                    }}
+                                  >{value}</span>
+                              }
+                            </div>
                           ))
                         )}
                       </div>
 
                       <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 , marginTop: 15 }}>รายการอุปกรณ์</div>
                       {[
+                        { label: 'Stock ID',  value: (() => { const s = stockItems.find(i => i.name === detailModal.data.item); return s ? s.id : '—' })(), mono: true },
                         { label: 'อุปกรณ์',   value: detailModal.data.item },
                         { label: 'จำนวน',     value: `${detailModal.data.qty} ชิ้น` },
                         {
                           label: detailModal.type === 'borrow' ? 'วันยืม' : 'วันที่ขอ',
-                          value: fmtDate(detailModal.type === 'borrow' ? detailModal.data.borrow_date : detailModal.data.request_date)
+                          value: fmtDate(detailModal.type === 'borrow' ? detailModal.data.borrow_date : detailModal.data.request_date),
+                          nowrap: true   // ← เพิ่ม
                         },
                         {
                           label: detailModal.type === 'borrow' ? 'วันกำหนดคืน' : 'วันที่รับคืน',
                           value: detailModal.type === 'borrow'
                             ? fmtDate(detailModal.data.due_date)
-                            : (detailModal.data.status === 'pending' ? '-' : (detailModal.data.updatedAt ? fmtDate(detailModal.data.updatedAt) : '-'))
+                            : (detailModal.data.status === 'pending' ? '-' : (detailModal.data.updatedAt ? fmtDate(detailModal.data.updatedAt) : '-')),
+                          nowrap: true   // ← เพิ่ม
                         },
                         { label: 'สถานะ', value: detailModal.data.status, status: true },
                         { label: 'หมายเหตุ', value: detailModal.data.note || '-', wrap: true },
-                      ].map(({ label, value, status, wrap , mono}) => (
+                      ].map(({ label, value, status, wrap , mono, nowrap}) => (
                         <div key={label} style={{
                           display: 'flex',
                           alignItems: wrap ? 'flex-start' : 'center',  // ✅
@@ -1333,8 +1381,8 @@ export default function BorrowPage() {
                               style={{
                                 fontSize: mono ? 12 : 13,
                                 overflow: 'hidden', textOverflow: 'ellipsis',
-                                whiteSpace: wrap ? 'normal' : 'nowrap',  // ✅
-                                wordBreak: wrap ? 'break-word' : 'normal', // ✅
+                                whiteSpace: wrap ? 'normal' : 'nowrap',
+                                wordBreak: wrap ? 'break-word' : 'normal',
                                 minWidth: 0, flex: 1
                               }}
                             >{value}</span>
