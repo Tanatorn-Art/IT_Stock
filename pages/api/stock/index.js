@@ -24,6 +24,24 @@ export default async function handler(req, res) {
       if (category && category !== 'all') {
         result = result.filter(i => i.category === category)
       }
+
+      // Sort by createdAt descending (newest first)
+      result.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0)
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0)
+        return dateB.getTime() - dateA.getTime()
+      })
+
+      // Paginate if page is specified
+      const { page, limit } = query
+      if (page) {
+        const pageNum = parseInt(page, 10) || 1
+        const limitNum = parseInt(limit, 10) || 20
+        const startIndex = (pageNum - 1) * limitNum
+        const endIndex = pageNum * limitNum
+        result = result.slice(startIndex, endIndex)
+      }
+
       await logApi(200)
       return res.status(200).json(result)
     }

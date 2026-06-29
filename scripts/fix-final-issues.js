@@ -5,7 +5,7 @@ import { join } from 'path';
 // Fix the final image path issues
 async function fixFinalIssues() {
   const db = getDatabase();
-  const imageDir = 'C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image';
+  const imageDir = join(process.cwd(), 'data', 'image');
 
   console.log('Fixing final image path issues...');
   console.log('==================================');

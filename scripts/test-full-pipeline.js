@@ -8,7 +8,7 @@ async function testFullPipeline() {
   console.log('=======================================');
 
   const db = getDatabase();
-  const imageDir = 'C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image';
+  const imageDir = join(process.cwd(), 'data', 'image');
 
   // Step 1: Check database state
   console.log('\n1. Database State:');
@@ -66,7 +66,7 @@ async function testFullPipeline() {
   
   for (const item of stockWithImages) {
     const imagePath = item.image;
-    const isValidFormat = imagePath.startsWith('/images/') && imagePath.includes('.webp');
+    const isValidFormat = (imagePath.startsWith('/images/') || imagePath.startsWith('/api/images')) && imagePath.includes('.webp');
     console.log(`   ${item.id}: "${imagePath}" ${isValidFormat ? '✓' : '✗'}`);
   }
 
@@ -77,12 +77,15 @@ async function testFullPipeline() {
   let validCount = 0;
   for (const item of stockWithImages) {
     const imagePath = item.image;
-    const filename = imagePath.split('/').pop();
+    let filename = imagePath.split('/').pop();
+    if (filename.includes('filename=')) {
+      filename = filename.split('filename=').pop();
+    }
     const fullPath = join(imageDir, filename);
     
     try {
       await stat(fullPath);
-      if (imagePath.startsWith('/images/') && imagePath.includes('.webp')) {
+      if ((imagePath.startsWith('/images/') || imagePath.startsWith('/api/images')) && imagePath.includes('.webp')) {
         validCount++;
       }
     } catch (error) {

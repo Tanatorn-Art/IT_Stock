@@ -5,7 +5,7 @@ import { join } from 'path';
 // Check if actual image files exist in data/image directory
 async function checkFileExistence() {
   const db = getDatabase();
-  const imageDir = 'C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image';
+  const imageDir = join(process.cwd(), 'data', 'image');
 
   console.log('Checking image file existence...');
   console.log('================================');
@@ -47,7 +47,10 @@ async function checkFileExistence() {
   let missingCount = 0;
   for (const item of stockWithImages) {
     const imagePath = item.image; // e.g., "/images/upload-1778051303628.webp"
-    const filename = imagePath.split('/').pop(); // Extract filename
+    let filename = imagePath.split('/').pop(); // Extract filename
+    if (filename.includes('filename=')) {
+      filename = filename.split('filename=').pop();
+    }
     const fullPath = join(imageDir, filename);
 
     try {

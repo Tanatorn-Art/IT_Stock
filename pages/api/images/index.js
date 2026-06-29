@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const imagePath = join('C:\\inetpub\\wwwroot\\IT-Stock-Dev-2026\\IT_stock\\data\\image', imageFilename);
+      const imagePath = join(process.cwd(), 'data', 'image', imageFilename);
       console.log('Looking for file:', imagePath);
 
       const fileStats = await stat(imagePath);

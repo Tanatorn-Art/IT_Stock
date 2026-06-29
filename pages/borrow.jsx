@@ -25,21 +25,21 @@ const mainArea = { flex: 1, padding: 24, minWidth: 0, overflowX: 'hidden', displ
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  active:   { label: 'ยืมอยู่',      bg: '#EAF3DE', color: '#3B6D11' },
-  overdue:  { label: 'เกินกำหนด',   bg: '#FCEBEB', color: '#A32D2D' },
-  returned: { label: 'คืนแล้ว',     bg: '#E6F1FB', color: '#185FA5' },
-  pending:  { label: 'ใช้อยู่', bg: '#DEFFEB', color: '#04632B' },
+  active: { label: 'ยืมอยู่', bg: '#EAF3DE', color: '#3B6D11' },
+  overdue: { label: 'เกินกำหนด', bg: '#FCEBEB', color: '#A32D2D' },
+  returned: { label: 'คืนแล้ว', bg: '#E6F1FB', color: '#185FA5' },
+  pending: { label: 'ใช้อยู่', bg: '#DEFFEB', color: '#04632B' },
   approved: { label: 'อนุมัติแล้ว', bg: '#EAF3DE', color: '#3B6D11' },
-  rejected: { label: 'ปฏิเสธ',      bg: '#FCEBEB', color: '#A32D2D' },
+  rejected: { label: 'ปฏิเสธ', bg: '#FCEBEB', color: '#A32D2D' },
   completed: { label: 'รับคืนแล้ว', bg: '#E6F1FB', color: '#185FA5' },
 }
 
 const DEPT_COLORS = {
-  IT:         { bg: '#E6F1FB', color: '#185FA5' },
-  HR:         { bg: '#E1F5EE', color: '#0F6E56' },
-  Finance:    { bg: '#FAEEDA', color: '#854F0B' },
+  IT: { bg: '#E6F1FB', color: '#185FA5' },
+  HR: { bg: '#E1F5EE', color: '#0F6E56' },
+  Finance: { bg: '#FAEEDA', color: '#854F0B' },
   Operations: { bg: '#EEEDFE', color: '#534AB7' },
-  Marketing:  { bg: '#FBEAF0', color: '#993556' },
+  Marketing: { bg: '#FBEAF0', color: '#993556' },
 }
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '-'
@@ -78,7 +78,7 @@ function EmployeeLookupPhoto({ employeeId }) {
   }
   if (showFallback) {
     return (
-      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',height: 130, width: 90, padding: 4 }} aria-hidden>
+      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', height: 130, width: 90, padding: 4 }} aria-hidden>
         <User size={32} strokeWidth={1.5} />
       </div>
     )
@@ -109,7 +109,7 @@ function EmployeeLookupPhotoModal({ employeeId }) {
   }
   if (showFallback) {
     return (
-      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',height: 130, width: 90, padding: 4 }} aria-hidden>
+      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', height: 130, width: 90, padding: 4 }} aria-hidden>
         <User size={32} strokeWidth={1.5} />
       </div>
     )
@@ -140,8 +140,10 @@ function StockItemPhoto({ itemName, stockItems }) {
 
   if (!imageUrl) {
     return (
-      <div style={{ ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 42.5, marginTop: 3,
-                    color: 'var(--text3)', fontSize: 40, width: 130, height: 130 }}>
+      <div style={{
+        ...frame, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 42.5, marginTop: 3,
+        color: 'var(--text3)', fontSize: 40, width: 130, height: 130
+      }}>
         📦
       </div>
     )
@@ -151,7 +153,7 @@ function StockItemPhoto({ itemName, stockItems }) {
     <img
       src={imageUrl}
       alt={itemName}
-      style={{ ...frame, display: 'block', objectFit: 'cover', height: 130, width: 130, padding: 4 , marginLeft: 42.5, marginTop: 3 }}
+      style={{ ...frame, display: 'block', objectFit: 'cover', height: 130, width: 130, padding: 4, marginLeft: 42.5, marginTop: 3 }}
     />
   )
 }
@@ -206,27 +208,78 @@ function SearchFilterBar({ search, setSearch, filterStatus, setFilterStatus, sta
   )
 }
 
+// ── Paginator (shared) ────────────────────────────────────────────────────────
+function Paginator({ page, totalPages, onPage }) {
+  if (totalPages <= 1) return null
+  const btn = (label, target, disabled) => (
+    <button
+      key={label}
+      onClick={() => !disabled && onPage(target)}
+      disabled={disabled}
+      style={{
+        minWidth: 30, height: 28, padding: '0 8px',
+        borderRadius: 6, border: '1px solid var(--border)',
+        background: target === page ? 'var(--accent)' : 'transparent',
+        color: target === page ? '#fff' : disabled ? 'var(--text3)' : 'var(--text2)',
+        fontSize: 12, cursor: disabled ? 'default' : 'pointer',
+        fontWeight: target === page ? 600 : 400,
+        transition: 'all .15s',
+      }}
+    >{label}</button>
+  )
+
+  // Show limited page buttons with ellipsis
+  const pages = []
+  const delta = 2
+  const left = Math.max(1, page - delta)
+  const right = Math.min(totalPages, page + delta)
+  if (left > 1) { pages.push(1); if (left > 2) pages.push('...') }
+  for (let i = left; i <= right; i++) pages.push(i)
+  if (right < totalPages) { if (right < totalPages - 1) pages.push('...'); pages.push(totalPages) }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, paddingTop: 12, flexWrap: 'wrap' }}>
+      {btn('‹', page - 1, page === 1)}
+      {pages.map((p, i) => p === '...' ? (
+        <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--text3)', fontSize: 12 }}>…</span>
+      ) : btn(p, p, false))}
+      {btn('›', page + 1, page === totalPages)}
+      <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 4 }}>
+        หน้า {page}/{totalPages}
+      </span>
+    </div>
+  )
+}
+
 // ── ItemPickerPanel ───────────────────────────────────────────────────────────
+const ITEM_PAGE_SIZE = 12
+
 function ItemPickerPanel({ stockItems, form, setForm }) {
   const [itemSearch, setItemSearch] = useState('')
+  const [page, setPage] = useState(1)
+
   const searchTerm = itemSearch.toLowerCase().trim()
-  const filteredItems = stockItems.filter(item =>
+
+  const filteredItems = useMemo(() => stockItems.filter(item =>
     !item.disabled &&
     (item.name.toLowerCase().includes(searchTerm) ||
-    (item.brand && item.brand.toLowerCase().includes(searchTerm)) ||
-    (item.model && item.model.toLowerCase().includes(searchTerm)) ||
-    (item.category && item.category.toLowerCase().includes(searchTerm)))
+      (item.brand && item.brand.toLowerCase().includes(searchTerm)) ||
+      (item.model && item.model.toLowerCase().includes(searchTerm)) ||
+      (item.category && item.category.toLowerCase().includes(searchTerm)))
   ).sort((a, b) => {
-    // Sort in-stock items first, out-of-stock items last
     const aOutOfStock = a.quantity <= 0
     const bOutOfStock = b.quantity <= 0
-
-    if (aOutOfStock && !bOutOfStock) return 1  // a is out of stock, put it after b
-    if (!aOutOfStock && bOutOfStock) return -1 // b is out of stock, put it after a
-
-    // If both have same stock status, sort by name
+    if (aOutOfStock && !bOutOfStock) return 1
+    if (!aOutOfStock && bOutOfStock) return -1
     return a.name.localeCompare(b.name, 'th')
-  })
+  }), [stockItems, searchTerm])
+
+  // Reset to page 1 when search changes
+  useEffect(() => { setPage(1) }, [searchTerm])
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEM_PAGE_SIZE))
+  const start = (page - 1) * ITEM_PAGE_SIZE
+  const pageItems = filteredItems.slice(start, start + ITEM_PAGE_SIZE)
 
   return (
     <>
@@ -247,67 +300,90 @@ function ItemPickerPanel({ stockItems, form, setForm }) {
         <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '32px 0' }}>ไม่พบอุปกรณ์</div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
-        {filteredItems.map(item => {
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+        {pageItems.map(item => {
           const isOutOfStock = item.quantity <= 0
           return (
-          <div
-            key={item.id}
-            onClick={() => !isOutOfStock && setForm(prev => ({ ...prev, item: item.name, qty: 1 }))}
-            style={{
-              background: form.item === item.name ? 'var(--accent-glow)' : (isOutOfStock ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.85)'),
-              border: form.item === item.name ? '2px solid var(--accent)' : (isOutOfStock ? '1px solid #ccc' : '1px solid var(--border)'),
-              borderRadius: 10, padding: 12, cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: 'all .2s ease',
-              display: 'flex', flexDirection: 'column', position: 'relative',
-              marginTop: 5, opacity: isOutOfStock ? 0.6 : 1
-            }}
-            onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' } }}
-            onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' } }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              {item.image ? (
-                <img src={item.image} alt={item.name} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
-              ) : (
-                <div style={{ width: 64, height: 64, background: 'var(--surface2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</div>
+            <div
+              key={item.id}
+              onClick={() => !isOutOfStock && setForm(prev => ({ ...prev, item: item.name, qty: 1 }))}
+              style={{
+                background: form.item === item.name ? 'var(--accent-glow)' : (isOutOfStock ? 'rgba(200,200,200,0.3)' : 'rgba(255,255,255,0.85)'),
+                border: form.item === item.name ? '2px solid var(--accent)' : (isOutOfStock ? '1px solid #ccc' : '1px solid var(--border)'),
+                borderRadius: 10, padding: 12, cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: 'all .2s ease',
+                display: 'flex', flexDirection: 'column', position: 'relative',
+                marginTop: 5, opacity: isOutOfStock ? 0.6 : 1
+              }}
+              onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' } }}
+              onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' } }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }}
+                  />
+                ) : (
+                  <div style={{ width: 64, height: 64, background: 'var(--surface2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📦</div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.brand} {item.model || ''}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{item.category}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: isOutOfStock ? '#999' : (form.item === item.name ? 'var(--accent)' : 'var(--text)'), fontFamily: 'var(--mono)' }}>
+                  {item.quantity} ชิ้น
+                </span>
+              </div>
+              {!isOutOfStock && item.quantity <= item.minQuantity && (
+                <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: 'var(--warning)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>ใกล้หมด</div>
               )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.brand} {item.model || ''}</div>
-              </div>
+              {isOutOfStock && (
+                <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: '#999', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>หมด</div>
+              )}
+              {form.item === item.name && !isOutOfStock && (
+                <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 10, background: 'var(--accent)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Check size={9} /> เลือกแล้ว
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, color: 'var(--text3)' }}>{item.category}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: isOutOfStock ? '#999' : (form.item === item.name ? 'var(--accent)' : 'var(--text)'), fontFamily: 'var(--mono)' }}>
-                {item.quantity} ชิ้น
-              </span>
-            </div>
-            {!isOutOfStock && item.quantity <= item.minQuantity && (
-              <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: 'var(--warning)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>ใกล้หมด</div>
-            )}
-            {isOutOfStock && (
-              <div style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, background: '#999', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>หมด</div>
-            )}
-            {form.item === item.name && !isOutOfStock && (
-              <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 10, background: 'var(--accent)', color: '#fff', padding: '1px 5px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Check size={9} /> เลือกแล้ว
-              </div>
-            )}
-          </div>
           )
         })}
       </div>
+      <Paginator page={page} totalPages={totalPages} onPage={setPage} />
     </>
   )
 }
 
 // ── BorrowListPanel ───────────────────────────────────────────────────────────
+const BORROW_PAGE_SIZE = 30
+
 function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, setBFilterStatus, handleReturn, calculateOverdueDays, onOpenDetail }) {
+  const [page, setPage] = useState(1)
+
+  // Reset to page 1 when filter/search changes
+  useEffect(() => { setPage(1) }, [bSearch, bFilterStatus])
+
+  const totalPages = Math.max(1, Math.ceil(filteredBorrows.length / BORROW_PAGE_SIZE))
+  const start = (page - 1) * BORROW_PAGE_SIZE
+  const pageBorrows = filteredBorrows.slice(start, start + BORROW_PAGE_SIZE)
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Clock size={15} color="var(--accent)" />
           รายการยืม ({filteredBorrows.length})
+          {filteredBorrows.length > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 400 }}>
+              ({start + 1}–{Math.min(start + BORROW_PAGE_SIZE, filteredBorrows.length)})
+            </span>
+          )}
         </h3>
         <button style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, fontSize: 12, color: 'var(--text2)', background: 'transparent', border: '1px solid var(--border)', cursor: 'pointer' }}>
           <Download size={12} /> Export
@@ -317,8 +393,8 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
         search={bSearch} setSearch={setBSearch}
         filterStatus={bFilterStatus} setFilterStatus={setBFilterStatus}
         statusOptions={[
-          { value: 'active',   label: 'ยืมอยู่' },
-          { value: 'overdue',  label: 'เกินกำหนด' },
+          { value: 'active', label: 'ยืมอยู่' },
+          { value: 'overdue', label: 'เกินกำหนด' },
           { value: 'returned', label: 'คืนแล้ว' },
         ]}
       />
@@ -332,9 +408,9 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
             </tr>
           </thead>
           <tbody>
-            {filteredBorrows.length === 0 ? (
+            {pageBorrows.length === 0 ? (
               <tr><td colSpan={10} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
-            ) : filteredBorrows.map(b => {
+            ) : pageBorrows.map(b => {
               const st = STATUS_CONFIG[b.status] || {}
               const dc = DEPT_COLORS[b.dept] || { bg: '#eee', color: '#333' }
               return (
@@ -388,18 +464,35 @@ function BorrowListPanel({ filteredBorrows, bSearch, setBSearch, bFilterStatus, 
           </tbody>
         </table>
       </div>
+      <Paginator page={page} totalPages={totalPages} onPage={setPage} />
     </>
   )
 }
 
 // ── RequisitionListPanel ──────────────────────────────────────────────────────
+const REQ_PAGE_SIZE = 30
+
 function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus, setRFilterStatus, handleOpenReceiveReturnModal, onOpenDetail }) {
+  const [page, setPage] = useState(1)
+
+  // Reset to page 1 when filter/search changes
+  useEffect(() => { setPage(1) }, [rSearch, rFilterStatus])
+
+  const totalPages = Math.max(1, Math.ceil(filteredReqs.length / REQ_PAGE_SIZE))
+  const start = (page - 1) * REQ_PAGE_SIZE
+  const pageReqs = filteredReqs.slice(start, start + REQ_PAGE_SIZE)
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <ClipboardCheck size={15} color="var(--accent)" />
           รายการเบิก ({filteredReqs.length})
+          {filteredReqs.length > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 400 }}>
+              ({start + 1}–{Math.min(start + REQ_PAGE_SIZE, filteredReqs.length)})
+            </span>
+          )}
         </h3>
         <button style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, fontSize: 12, color: 'var(--text2)', background: 'transparent', border: '1px solid var(--border)', cursor: 'pointer' }}>
           <Download size={12} /> Export
@@ -409,7 +502,7 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
         search={rSearch} setSearch={setRSearch}
         filterStatus={rFilterStatus} setFilterStatus={setRFilterStatus}
         statusOptions={[
-          { value: 'pending',  label: 'รอดำเนินการ' },
+          { value: 'pending', label: 'รอดำเนินการ' },
           { value: 'completed', label: 'รับคืนแล้ว' },
         ]}
       />
@@ -417,15 +510,15 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['รหัส', 'รหัสพนักงาน', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ','วันที่รับคืน', 'สถานะ', ''].map(h => (
+              {['รหัส', 'รหัสพนักงาน', 'ผู้เบิก', 'แผนก', 'อุปกรณ์', 'วันที่ขอ', 'วันที่รับคืน', 'สถานะ', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filteredReqs.length === 0 ? (
+            {pageReqs.length === 0 ? (
               <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>ไม่พบรายการที่ตรงกัน</td></tr>
-            ) : filteredReqs.map(r => {
+            ) : pageReqs.map(r => {
               const st = STATUS_CONFIG[r.status] || {}
               const dc = DEPT_COLORS[r.dept] || { bg: '#eee', color: '#333' }
               return (
@@ -473,6 +566,7 @@ function RequisitionListPanel({ filteredReqs, rSearch, setRSearch, rFilterStatus
           </tbody>
         </table>
       </div>
+      <Paginator page={page} totalPages={totalPages} onPage={setPage} />
     </>
   )
 }
@@ -605,10 +699,10 @@ export default function BorrowPage() {
   }), [requisitions, rSearch, rFilterStatus])
 
   const stats = {
-    total:    borrows.length + requisitions.length,
+    total: borrows.length + requisitions.length,
     totalQty: borrows.reduce((s, b) => s + b.qty, 0) + requisitions.reduce((s, r) => s + r.qty, 0),
-    active:   borrows.filter(b => b.status === 'active').length,
-    overdue:  borrows.filter(b => b.status === 'overdue').length,
+    active: borrows.filter(b => b.status === 'active').length,
+    overdue: borrows.filter(b => b.status === 'overdue').length,
     returned: borrows.filter(b => b.status === 'returned').length,
     reqMonth: requisitions.length,
   }
@@ -999,10 +1093,10 @@ export default function BorrowPage() {
 
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
-              <StatCard icon={Clock}          label="กำลังยืมอยู่" value={stats.active}   color="var(--accent)" />
-              <StatCard icon={AlertCircle}    label="เกินกำหนด"   value={stats.overdue}  color="var(--danger)" />
+              <StatCard icon={Clock} label="กำลังยืมอยู่" value={stats.active} color="var(--accent)" />
+              <StatCard icon={AlertCircle} label="เกินกำหนด" value={stats.overdue} color="var(--danger)" />
               <StatCard icon={ClipboardCheck} label="เบิกทั้งหมด" value={stats.reqMonth} color="var(--success)" />
-              <StatCard icon={Box}            label="คืนแล้ว"      value={stats.returned} color="var(--warning)" />
+              <StatCard icon={Box} label="คืนแล้ว" value={stats.returned} color="var(--warning)" />
             </div>
 
             {/* ── Form view (ยืม / เบิก) ── */}
@@ -1119,7 +1213,7 @@ export default function BorrowPage() {
                       </div>
                     ) : (
                       <div style={{ background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>
-                         เลือกอุปกรณ์จากรายการทางขวา →
+                        เลือกอุปกรณ์จากรายการทางขวา →
                       </div>
                     )}
 
@@ -1264,35 +1358,38 @@ export default function BorrowPage() {
 
                   <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '200px 1fr', gap: 14 }}>
 
-                  {/* Left panel – photos */}
-                  <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 , marginLeft: 50 , marginTop: -5}}>รูปผู้ทำรายการ</div>
-                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' ,
-                       marginLeft: 20 ,
-                        }}>
-                      {/* Photo */}
-                      <EmployeeLookupPhotoModal employeeId={detailModal.data.employee_code || ''} />
+                    {/* Left panel – photos */}
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, marginLeft: 50, marginTop: -5 }}>รูปผู้ทำรายการ</div>
+                      <div style={{
+                        display: 'flex', gap: 14, alignItems: 'flex-start',
+                        marginLeft: 20,
+                      }}>
+                        {/* Photo */}
+                        <EmployeeLookupPhotoModal employeeId={detailModal.data.employee_code || ''} />
+                      </div>
+                      <div style={{
+                        fontSize: 11, color: 'var(--text3)', marginBottom: 2,
+                        marginLeft: 45,
+                        marginTop: 20
+                      }}>รูปรายการอุปกรณ์</div>
+                      <div style={{
+                        display: 'flex', gap: 14, alignItems: 'flex-start',
+                        marginLeft: -23
+                      }}>
+                        {/* Photo รายการ stock ที่ยืม/เบิก*/}
+                        <StockItemPhoto itemName={detailModal.data.item} stockItems={stockItems} />
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 ,
-                       marginLeft: 45 ,
-                       marginTop: 20
-                       }}>รูปรายการอุปกรณ์</div>
-                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' ,
-                       marginLeft: -23
-                       }}>
-                      {/* Photo รายการ stock ที่ยืม/เบิก*/}
-                      <StockItemPhoto itemName={detailModal.data.item} stockItems={stockItems} />
-                    </div>
-                  </div>
 
-                  {/* Item */}
-                  <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
-                    {/* Info */}
-                    <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 }}>ผู้ทำรายการ</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Item */}
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 14 }}>
+                      {/* Info */}
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 }}>ผู้ทำรายการ</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
 
-                      {/* ชื่อ */}
-                      {/* <div
+                        {/* ชื่อ */}
+                        {/* <div
                         title={detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
                         style={{
                           fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 10,
@@ -1302,20 +1399,20 @@ export default function BorrowPage() {
                       >
                         {detailModal.type === 'borrow' ? detailModal.data.borrower : detailModal.data.requester}
                       </div> */}
-                      {detailEmployeeLoading ? (
-                        <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <RefreshCw size={12} className="spin" /> กำลังโหลดข้อมูลพนักงาน...
-                        </div>
-                      ) : (
-                        [
-                          { label: 'ชื่อ', value: detailModal.data.borrower || detailModal.data.requester || '—', mono: true },
-                          { label: 'รหัสพนักงาน', value: detailModal.data.employee_code || '—', mono: true },
-                          { label: 'WD',          value: detailEmployeeData?.workDateNumber || detailModal.data.workDateNumber || '—', mono: true },
-                          { label: 'แผนก',        value: detailEmployeeData?.departmentGroup || detailModal.data.dept || '—', mono: true },
-                          { label: 'หน่วยงาน',    value: detailEmployeeData?.department || detailModal.data.department || '—' ,mono: true },
-                          { label: 'Level',       value: detailEmployeeData?.levelCard || detailModal.data.levelCard || '—',mono: true  },
-                        ].map(({ label, value, mono, badge }) => (
-                          <div key={label} style={{
+                        {detailEmployeeLoading ? (
+                          <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <RefreshCw size={12} className="spin" /> กำลังโหลดข้อมูลพนักงาน...
+                          </div>
+                        ) : (
+                          [
+                            { label: 'ชื่อ', value: detailModal.data.borrower || detailModal.data.requester || '—', mono: true },
+                            { label: 'รหัสพนักงาน', value: detailModal.data.employee_code || '—', mono: true },
+                            { label: 'WD', value: detailEmployeeData?.workDateNumber || detailModal.data.workDateNumber || '—', mono: true },
+                            { label: 'แผนก', value: detailEmployeeData?.departmentGroup || detailModal.data.dept || '—', mono: true },
+                            { label: 'หน่วยงาน', value: detailEmployeeData?.department || detailModal.data.department || '—', mono: true },
+                            { label: 'Level', value: detailEmployeeData?.levelCard || detailModal.data.levelCard || '—', mono: true },
+                          ].map(({ label, value, mono, badge }) => (
+                            <div key={label} style={{
                               display: 'flex', alignItems: 'center', gap: 6,
                               padding: '5px 0', borderBottom: '1px solid var(--border)',
                               overflow: 'hidden'  // ✅
@@ -1323,32 +1420,32 @@ export default function BorrowPage() {
                               <span style={{ fontSize: 12, color: 'var(--text2)', minWidth: 100, flexShrink: 0 }}>{label}</span>
                               {badge
                                 ? <Badge
-                                    text={value}
-                                    bg={(DEPT_COLORS[value] || { bg: '#E6F1FB' }).bg}
-                                    color={(DEPT_COLORS[value] || { color: '#185FA5' }).color}
-                                  />
+                                  text={value}
+                                  bg={(DEPT_COLORS[value] || { bg: '#E6F1FB' }).bg}
+                                  color={(DEPT_COLORS[value] || { color: '#185FA5' }).color}
+                                />
                                 : <span
-                                    title={value}
-                                    style={{
-                                      fontSize: mono ? 12 : 13,
-                                      fontWeight: 500,
-                                      color: 'var(--text)',
-                                      fontFamily: mono ? 'monospace' : 'inherit',
-                                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                      minWidth: 0, flex: 1  // ✅
-                                    }}
-                                  >{value}</span>
+                                  title={value}
+                                  style={{
+                                    fontSize: mono ? 12 : 13,
+                                    fontWeight: 500,
+                                    color: 'var(--text)',
+                                    fontFamily: mono ? 'monospace' : 'inherit',
+                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                    minWidth: 0, flex: 1  // ✅
+                                  }}
+                                >{value}</span>
                               }
                             </div>
                           ))
                         )}
                       </div>
 
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5 , marginTop: 15 }}>รายการอุปกรณ์</div>
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 5, marginTop: 15 }}>รายการอุปกรณ์</div>
                       {[
-                        { label: 'Stock ID',  value: (() => { const s = stockItems.find(i => i.name === detailModal.data.item); return s ? s.id : '—' })(), mono: true },
-                        { label: 'อุปกรณ์',   value: detailModal.data.item },
-                        { label: 'จำนวน',     value: `${detailModal.data.qty} ชิ้น` },
+                        { label: 'Stock ID', value: (() => { const s = stockItems.find(i => i.name === detailModal.data.item); return s ? s.id : '—' })(), mono: true },
+                        { label: 'อุปกรณ์', value: detailModal.data.item },
+                        { label: 'จำนวน', value: `${detailModal.data.qty} ชิ้น` },
                         {
                           label: detailModal.type === 'borrow' ? 'วันยืม' : 'วันที่ขอ',
                           value: fmtDate(detailModal.type === 'borrow' ? detailModal.data.borrow_date : detailModal.data.request_date),
@@ -1363,7 +1460,7 @@ export default function BorrowPage() {
                         },
                         { label: 'สถานะ', value: detailModal.data.status, status: true },
                         { label: 'หมายเหตุ', value: detailModal.data.note || '-', wrap: true },
-                      ].map(({ label, value, status, wrap , mono, nowrap}) => (
+                      ].map(({ label, value, status, wrap, mono, nowrap }) => (
                         <div key={label} style={{
                           display: 'flex',
                           alignItems: wrap ? 'flex-start' : 'center',  // ✅

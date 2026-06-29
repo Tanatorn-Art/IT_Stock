@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const imagePath = join('C:\\inetpub\\wwwroot\\IT-Stock-Dev-2026\\IT_stock\\data\\image', filename);
+    const imagePath = join(process.cwd(), 'data', 'image', imageFilename);
     console.log('Looking for file:', imagePath);
 
     const fileStats = await stat(imagePath);
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
     const fileBuffer = await readFile(imagePath);
-    const ext = filename.split('.').pop().toLowerCase();
+    const ext = imageFilename.split('.').pop().toLowerCase();
 
     // Set appropriate content type based on file extension
     const contentTypes = {
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
     const contentType = contentTypes[ext] || 'application/octet-stream';
 
-    console.log('Serving file:', filename, 'Size:', fileBuffer.length, 'Type:', contentType);
+    console.log('Serving file:', imageFilename, 'Size:', fileBuffer.length, 'Type:', contentType);
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -13,8 +13,10 @@ const CATS = ['all','Laptop','Desktop','Monitor','Peripheral','Network','Server'
 const ICON = {Laptop:Laptop,Desktop:Monitor,Monitor:Monitor,Peripheral:Mouse,Network:Network,Server:Server,Storage:HardDrive,Phone:Smartphone,Tablet:Tablet,Other:Box,all:Box}
 
 export default function Home() {
-  const [items,    setItems]    = useState([])
+  const [allItems, setAllItems] = useState([])
   const [loading,  setLoading]  = useState(true)
+  const [page,     setPage]     = useState(1)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('all')
   const [barItem,  setBarItem]  = useState(null)
@@ -27,49 +29,122 @@ export default function Home() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false)
 
+  const sentinelRef = useRef(null)
+  const LIMIT = 24
+
   const showToast = (msg, type='success') => {
     setToast({msg,type})
     setTimeout(()=>setToast(null), 3000)
   }
 
+  const handleSearchChange = (val) => {
+    setSearch(val)
+    setPage(1)
+  }
+
+  const handleCategorySelect = (cat) => {
+    setCategory(cat)
+    setPage(1)
+  }
+
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
-      const p = new URLSearchParams()
-      if (search) p.set('search', search)
-      if (category !== 'all') p.set('category', category)
-      const res = await fetch(`/api/stock?${p}`)
-      setItems(await res.json())
-    } finally { setLoading(false) }
-  }, [search, category])
+      const res = await fetch('/api/stock')
+      setAllItems(await res.json())
+    } catch (error) {
+      console.error('Error fetching stock:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  useEffect(() => { fetchItems() }, [fetchItems])
+  // Data fetching effect
+  useEffect(() => {
+    fetchItems()
+  }, [refreshKey, fetchItems])
+
+  // Filter items in memory
+  const filtered = useMemo(() => {
+    let result = [...allItems]
+    
+    // Sort by createdAt descending (newest first)
+    result.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0)
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0)
+      return dateB.getTime() - dateA.getTime()
+    })
+
+    if (search) {
+      const s = search.toLowerCase()
+      result = result.filter(i =>
+        i.name?.toLowerCase().includes(s) ||
+        i.id?.toLowerCase().includes(s) ||
+        i.brand?.toLowerCase().includes(s) ||
+        i.serial?.toLowerCase().includes(s) ||
+        i.model?.toLowerCase().includes(s)
+      )
+    }
+
+    if (category && category !== 'all') {
+      result = result.filter(i => i.category === category)
+    }
+
+    return result
+  }, [allItems, search, category])
+
+  // Paginated/visible items to render
+  const visibleItems = useMemo(() => {
+    return filtered.slice(0, page * LIMIT)
+  }, [filtered, page])
+
+  const hasMore = visibleItems.length < filtered.length
+
+  // Intersection Observer for scroll loading
+  useEffect(() => {
+    if (!hasMore || loading) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setPage(prev => prev + 1)
+      }
+    }, {
+      rootMargin: '150px',
+    })
+
+    const currentSentinel = sentinelRef.current
+    if (currentSentinel) {
+      observer.observe(currentSentinel)
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel)
+      }
+    }
+  }, [hasMore, loading])
 
   const handleSave = (saved) => {
     setFormItem(undefined)
-    fetchItems()
+    setPage(1)
+    setRefreshKey(prev => prev + 1)
     showToast(formItem===null ? `เพิ่ม ${saved.id} สำเร็จ` : `อัปเดต ${saved.id} สำเร็จ`)
   }
 
   const handleDelete = async (item) => {
     await fetch(`/api/stock/${item.id}`, { method:'DELETE' })
     setDelItem(null)
-    fetchItems()
+    setPage(1)
+    setRefreshKey(prev => prev + 1)
     showToast(`ลบ ${item.id} เรียบร้อย`, 'danger')
   }
 
-  const sorted = [...items].sort((a,b) => {
-    // Sort by createdAt in descending order (newest first)
-    // If createdAt is missing, treat it as oldest
-    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0)
-    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0)
-    return dateB.getTime() - dateA.getTime()
-  })
+  const sorted = visibleItems
 
   const stats = {
-    total:    items.length,
-    low:      items.filter(i => i.quantity <= i.minQuantity).length,
-    totalQty: items.reduce((s,i) => s+i.quantity, 0),
+    total:    allItems.length,
+    low:      allItems.filter(i => i.quantity <= i.minQuantity).length,
+    totalQty: allItems.reduce((s,i) => s+i.quantity, 0),
   }
 
   return (
@@ -94,7 +169,7 @@ export default function Home() {
               {/* <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="index" /> */}
             </div>
             <div style={navbarRight}>
-              <CategoryDropdown current={category} onSelect={setCategory} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
+              <CategoryDropdown current={category} onSelect={handleCategorySelect} isOpen={dropdownOpen} onToggle={() => setDropdownOpen(!dropdownOpen)} />
               <SettingsDropdown isOpen={settingsDropdownOpen} onToggle={() => setSettingsDropdownOpen(!settingsDropdownOpen)} currentPage="index" />
               <Stat label="รายการ" val={stats.total} unit="รายการ" />
               <Stat label="รวม" val={stats.totalQty} unit="ชิ้น" />
@@ -109,8 +184,8 @@ export default function Home() {
           <div style={toolbar}>
             <div style={searchWrap}>
               <Search size={16} style={{color:'var(--text3)'}} />
-              <input style={searchIn} placeholder="ค้นหา ID, ชื่อ, ยี่ห้อ, Serial..." value={search} onChange={e=>setSearch(e.target.value)} />
-              {search && <button onClick={()=>setSearch('')} style={clearX}><X size={12} /></button>}
+              <input style={searchIn} placeholder="ค้นหา ID, ชื่อ, ยี่ห้อ, Serial..." value={search} onChange={e=>handleSearchChange(e.target.value)} />
+              {search && <button onClick={()=>handleSearchChange('')} style={clearX}><X size={12} /></button>}
             </div>
 
             {/* <button onClick={()=>setFormItem(null)} style={addBtn}><Plus size={14} /> เพิ่มอุปกรณ์</button> */}
@@ -124,7 +199,7 @@ export default function Home() {
           )} */}
 
           {/* Content */}
-          {loading ? (
+          {loading && page === 1 ? (
             <div style={centerBox}><div style={spinner}/><span style={{color:'var(--text3)',fontFamily:'var(--mono)',fontSize:13}}>Loading...</span></div>
           ) : sorted.length===0 ? (
             <div style={centerBox}>
@@ -145,6 +220,13 @@ export default function Home() {
             </div>
           ) : (
             <TableView items={sorted} onEdit={setFormItem} onDelete={setDelItem} onBarcode={setBarItem} />
+          )}
+
+          {/* Infinite Scroll Sentinel */}
+          {hasMore && (
+            <div ref={sentinelRef} style={{ display: 'flex', justifyContent: 'center', padding: '20px 0', width: '100%', minHeight: '50px' }}>
+              <span style={{ color: 'var(--text3)', fontSize: 12, opacity: 0.5 }}>เลื่อนลงเพื่อดูเพิ่มเติม</span>
+            </div>
           )}
         </main>
       </div>
@@ -176,7 +258,7 @@ function Card({item, onEdit, onDelete, onBarcode, onClick}) {
     <div className="card" style={cardSt} onClick={onClick}>
       {item.image ? (
         <div style={{...cardImgWrap, position: 'relative'}}>
-          <img src={item.image} alt={item.name} style={{...cardImg, filter: isOutOfStock ? 'grayscale(100%)' : 'none'}} />
+          <img src={item.image} alt={item.name} loading="lazy" decoding="async" style={{...cardImg, filter: isOutOfStock ? 'grayscale(100%)' : 'none'}} />
           {isOutOfStock && (
             <div style={{
               position: 'absolute',
@@ -366,7 +448,7 @@ const alertBar={background:'rgba(255,184,0,.1)',border:'1px solid rgba(255,184,0
 const centerBox={display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:280,gap:12}
 const spinner={width:34,height:34,border:'3px solid var(--border)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin .8s linear infinite'}
 const grid={display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,auto))',gap:16,justifyContent:'center',maxWidth:1400,width:'100%'}
-const cardSt={background:'rgba(255,255,255,0.85)',border:'1px solid var(--border)',borderRadius:12,padding:0,transition:'all .2s ease',animation:'fadein .3s ease',cursor:'pointer',overflow:'hidden'}
+const cardSt={background:'rgba(255,255,255,0.85)',border:'1px solid var(--border)',borderRadius:12,padding:0,transition:'all .2s ease',animation:'fadein .3s ease',cursor:'pointer',overflow:'hidden',contentVisibility:'auto',containIntrinsicSize:'0 430px'}
 const catTag={fontSize:10,background:'var(--surface2)',color:'var(--text2)',padding:'2px 7px',borderRadius:9,border:'1px solid var(--border)'}
 const idTag={fontFamily:'var(--mono)',fontSize:11,color:'var(--accent)',background:'var(--accent-glow)',padding:'3px 7px',borderRadius:6}
 const serialTag={fontFamily:'var(--mono)',fontSize:10,color:'var(--text3)',background:'rgba(255,255,255,.03)',padding:'2px 6px',borderRadius:4,marginBottom:4,letterSpacing:.4}

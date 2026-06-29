@@ -5,7 +5,7 @@ import { join } from 'path';
 // Debug current image state
 async function debugCurrentState() {
   const db = getDatabase();
-  const imageDir = 'C:\\Users\\armmi\\Documents\\GitHub\\IT-Stock\\data\\image';
+  const imageDir = join(process.cwd(), 'data', 'image');
 
   console.log('Debugging current image state...');
   console.log('================================');
